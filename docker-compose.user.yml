@@ -1,16 +1,16 @@
 # ============================================================
 # Ombre Brain — 用户快速部署版
-# User Quick Deploy (pre-built image, no local build needed)
+# User Quick Deploy (local build, no pre-built image needed)
 #
 # 使用方法 / Usage:
 #   1. 创建 .env: echo "OMBRE_API_KEY=your-key" > .env
 #   2. 按需修改下面的 volumes 路径
-#   3. docker compose -f docker-compose.user.yml up -d
+#   3. docker compose -f docker-compose.user.yml up -d --build
 # ============================================================
 
 services:
   ombre-brain:
-    image: p0luz/ombre-brain:latest
+    build: .
     container_name: ombre-brain
     restart: unless-stopped
     ports:
