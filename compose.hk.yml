@@ -15,10 +15,10 @@ services:
     ports:
       - "18001:8000"
     volumes:
-      - /srv/ombre-brain/buckets:/data
-      - /srv/ombre-brain/state:/state
-      - /srv/ombre-brain/config.yaml:/app/config.yaml
-      - /opt/Ombre-Brain/.env:/app/.env
+      - ./buckets:/data
+      - ./state:/state
+      - ./config.yaml:/app/config.yaml
+      - ./.env:/app/.env
 
   ombre-gateway:
     build: .
@@ -34,6 +34,6 @@ services:
     ports:
       - "18002:8010"
     volumes:
-      - /srv/ombre-brain/buckets:/data
-      - /srv/ombre-brain/state:/state
-      - /srv/ombre-brain/config.yaml:/app/config.yaml:ro
+      - ./buckets:/data
+      - ./state:/state
+      - ./config.yaml:/app/config.yaml:ro
