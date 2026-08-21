@@ -32,7 +32,8 @@ ENV OMBRE_BUCKETS_DIR=/app/buckets
 EXPOSE 8000
 EXPOSE 8010
 
-# 1. Apply daily_chat_memory patches
+# 1. Apply daily_chat_memory patches to reflection_engine.py
 # 2. Set up persistent config.yaml via symlink
-# 3. Start both Brain and Gateway
-CMD ["sh", "-c", "python3 /app/patch.py; mkdir -p /app/persistent && ([ -f /app/persistent/config.yaml ] || cp /app/config.example.yaml /app/persistent/config.yaml) && ln -sf /app/persistent/config.yaml /app/config.yaml; python server.py & python gateway.py & wait"]
+# 3. Apply multi-upstream gateway patch to config.yaml
+# 4. Start both Brain and Gateway
+CMD ["sh", "-c", "python3 /app/patch.py; mkdir -p /app/persistent && ([ -f /app/persistent/config.yaml ] || cp /app/config.example.yaml /app/persistent/config.yaml) && ln -sf /app/persistent/config.yaml /app/config.yaml; python3 /app/patch_config.py; python server.py & python gateway.py & wait"]
