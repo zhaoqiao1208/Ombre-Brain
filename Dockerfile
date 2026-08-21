@@ -1,9 +1,6 @@
 # ============================================================
-# Ombre Brain Docker Build
-# Docker 构建文件
-#
-# Build: docker build -t ombre-brain .
-# Run:   docker run -e OMBRE_API_KEY=your-key -p 8000:8000 ombre-brain
+# Ombre Brain Docker Build (Zeabur dual-service)
+# With daily_chat_memory fix, config persistence, MCP lock
 # ============================================================
 
 FROM python:3.12-slim
@@ -11,28 +8,31 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Install dependencies first (leverage Docker cache)
-# 先装依赖（利用 Docker 缓存）
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir "mcp>=1.0.0,<2.0.0"
 
-# Copy project files / 复制项目文件
+# Copy project files
 COPY *.py .
 COPY resources ./resources
 COPY scripts ./scripts
 COPY dashboard.html .
 COPY dashboard_assets ./dashboard_assets
 COPY config.example.yaml ./config.yaml
+COPY config.example.yaml ./config.example.yaml
+COPY patch.py ./patch.py
 RUN chmod +x scripts/*.sh
 
-# Persistent mount point: bucket data
-# 持久化挂载点：记忆数据
+# Persistent mount point
 VOLUME ["/app/buckets"]
 
-# Default to streamable-http for container (remote access)
-# 容器场景默认用 streamable-http
 ENV OMBRE_TRANSPORT=streamable-http
 ENV OMBRE_BUCKETS_DIR=/app/buckets
 
 EXPOSE 8000
+EXPOSE 8010
 
-CMD ["python", "server.py"]
+# 1. Apply daily_chat_memory patches
+# 2. Set up persistent config.yaml via symlink
+# 3. Start both Brain and Gateway
+CMD ["sh", "-c", "python3 /app/patch.py; mkdir -p /app/persistent && ([ -f /app/persistent/config.yaml ] || cp /app/config.example.yaml /app/persistent/config.yaml) && ln -sf /app/persistent/config.yaml /app/config.yaml; python server.py & python gateway.py & wait"]
