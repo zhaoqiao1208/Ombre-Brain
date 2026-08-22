@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Startup patch: fix daily_chat_memory issues in reflection_engine.py"""
+"""Startup patch: fix daily_chat_memory + inject Supabase sync into gateway_state.py"""
 
 import os
 import sys
@@ -41,5 +41,136 @@ try:
     print('PATCH: DCM fix applied', file=sys.stderr, flush=True)
 except Exception as e:
     print(f'PATCH: DCM fix FAILED: {e}', file=sys.stderr, flush=True)
+
+# ============================================================
+# 2. Inject Supabase sync into gateway_state.py
+#    This modifies the SOURCE file, not config.yaml,
+#    so the symlink doesn't affect it.
+# ============================================================
+
+try:
+    gw_path = '/app/gateway_state.py'
+    with open(gw_path, 'r') as f:
+        gw_code = f.read()
+
+    print(f'PATCH: gateway_state.py loaded, {len(gw_code)} bytes', file=sys.stderr, flush=True)
+
+    if '_supabase_sync_turn' in gw_code:
+        print('PATCH: Supabase sync already installed, skipping', file=sys.stderr, flush=True)
+    else:
+        # 2a. Add imports and helper functions after 'from typing import Any'
+        old_import = 'from typing import Any'
+        new_import = '''from typing import Any
+
+import urllib.request
+import urllib.error
+import threading
+import logging
+
+_supabase_logger = logging.getLogger("ombre_brain.supabase_sync")
+
+
+def _supabase_get_env(name):
+    return os.environ.get(name, "").strip()
+
+
+def _supabase_is_configured():
+    return bool(_supabase_get_env("OMBRE_SUPABASE_URL") and _supabase_get_env("OMBRE_SUPABASE_KEY"))
+
+
+def _supabase_insert_message(content, role, conversation_id="", assistant_id=""):
+    base = _supabase_get_env("OMBRE_SUPABASE_URL").rstrip("/")
+    key = _supabase_get_env("OMBRE_SUPABASE_KEY")
+    url = f"{base}/rest/v1/chat_messages"
+    body = json.dumps({
+        "content": content,
+        "role": role,
+        "conversation_id": conversation_id,
+        "assistant_id": assistant_id,
+    }, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(url, data=body, method="POST")
+    req.add_header("apikey", key)
+    req.add_header("Authorization", f"Bearer {key}")
+    req.add_header("Content-Type", "application/json")
+    req.add_header("Prefer", "return=minimal")
+    with urllib.request.urlopen(req, timeout=5) as resp:
+        pass
+
+
+def _supabase_sync_turn_sync(user_text, assistant_text, conversation_id, assistant_id):
+    try:
+        if user_text and user_text.strip():
+            _supabase_insert_message(user_text.strip(), "user", conversation_id, assistant_id)
+            _supabase_logger.info("Supabase wrote user message (%d chars)", len(user_text.strip()))
+        if assistant_text and assistant_text.strip():
+            _supabase_insert_message(assistant_text.strip(), "assistant", conversation_id, assistant_id)
+            _supabase_logger.info("Supabase wrote assistant message (%d chars)", len(assistant_text.strip()))
+    except urllib.error.HTTPError as exc:
+        _supabase_logger.error("Supabase HTTP error: %s %s", exc.code, exc.reason)
+    except Exception as exc:
+        _supabase_logger.error("Supabase sync failed: %s", exc)
+
+
+def _supabase_sync_turn(*, user_text, assistant_text="", conversation_id="", assistant_id=""):
+    if not _supabase_is_configured():
+        _supabase_logger.warning("Supabase not configured, skipping sync")
+        return
+    t = threading.Thread(
+        target=_supabase_sync_turn_sync,
+        args=(user_text, assistant_text, conversation_id, assistant_id),
+        daemon=True,
+    )
+    t.start()'''
+
+        if old_import in gw_code:
+            gw_code = gw_code.replace(old_import, new_import, 1)
+            print('PATCH: Supabase imports added', file=sys.stderr, flush=True)
+        else:
+            print('PATCH: WARN: import anchor not found', file=sys.stderr, flush=True)
+
+        # 2b. Patch record_conversation_turn: insert Supabase sync before return
+        old_return = '        turn_id = int(cursor.lastrowid or 0)\n        conn.close()\n        return turn_id'
+        new_return = '''        turn_id = int(cursor.lastrowid or 0)
+        conn.close()
+        try:
+            _supabase_sync_turn(
+                user_text=user_text,
+                assistant_text=assistant_text,
+                conversation_id=safe_session_id,
+                assistant_id=safe_profile_id,
+            )
+        except Exception:
+            pass
+        return turn_id'''
+
+        if old_return in gw_code:
+            gw_code = gw_code.replace(old_return, new_return, 1)
+            print('PATCH: Supabase sync injected into record_conversation_turn', file=sys.stderr, flush=True)
+        else:
+            print('PATCH: WARN: return anchor not found', file=sys.stderr, flush=True)
+            # Print surrounding code for debugging
+            lines = gw_code.split('\n')
+            for i, line in enumerate(lines):
+                if 'return turn_id' in line:
+                    start = max(0, i-5)
+                    end = min(len(lines), i+3)
+                    for j in range(start, end):
+                        print(f'PATCH: line {j}: {repr(lines[j])}', file=sys.stderr, flush=True)
+
+        with open(gw_path, 'w') as f:
+            f.write(gw_code)
+
+        # Verify
+        with open(gw_path, 'r') as f:
+            verify = f.read()
+        if '_supabase_sync_turn' in verify:
+            print('PATCH: VERIFIED _supabase_sync_turn in gateway_state.py', file=sys.stderr, flush=True)
+        else:
+            print('PATCH: VERIFICATION FAILED', file=sys.stderr, flush=True)
+
+except Exception as e:
+    print(f'PATCH: Supabase sync FAILED: {e}', file=sys.stderr, flush=True)
+    import traceback
+    traceback.print_exc(file=sys.stderr)
 
 print("========== PATCH.PY DONE ==========", file=sys.stderr, flush=True)

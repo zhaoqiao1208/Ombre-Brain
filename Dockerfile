@@ -1,5 +1,5 @@
 # ============================================================
-# Ombre Brain Docker Build (Zeabur dual-service + Supabase proxy)
+# Ombre Brain Docker Build (Zeabur dual-service)
 # ============================================================
 
 FROM python:3.12-slim
@@ -31,8 +31,8 @@ ENV OMBRE_BUCKETS_DIR=/app/buckets
 EXPOSE 8000
 EXPOSE 8010
 
-# 1. Apply DCM fix to reflection_engine.py
-# 2. ALWAYS re-copy config from source (don't trust persistent volume's old copy)
-# 3. patch_config.py changes port 8010->8011 and sets multi-upstream
-# 4. Start Brain(8000) + Gateway(8011) + SupabaseProxy(8010)
-CMD ["sh", "-c", "python3 /app/patch.py; mkdir -p /app/persistent && cp /app/config.example.yaml /app/persistent/config.yaml && ln -sf /app/persistent/config.yaml /app/config.yaml; python3 /app/patch_config.py; python server.py & python gateway.py & python supabase_proxy.py & wait"]
+# 1. patch.py: DCM fix + inject Supabase sync into gateway_state.py source
+# 2. Set up persistent config.yaml via symlink
+# 3. patch_config.py: set multi-upstream (does NOT change port)
+# 4. Start Brain(8000) + Gateway(8010)
+CMD ["sh", "-c", "python3 /app/patch.py; mkdir -p /app/persistent && cp /app/config.example.yaml /app/persistent/config.yaml && ln -sf /app/persistent/config.yaml /app/config.yaml; python3 /app/patch_config.py; python server.py & python gateway.py & wait"]
