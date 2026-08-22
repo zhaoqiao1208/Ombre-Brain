@@ -1,5 +1,5 @@
 # ============================================================
-# Ombre Brain Docker Build (Zeabur dual-service)
+# Ombre Brain Docker Build (Zeabur dual-service + Supabase sync)
 # ============================================================
 
 FROM python:3.12-slim
@@ -20,7 +20,13 @@ COPY dashboard_assets ./dashboard_assets
 COPY config.example.yaml ./config.yaml
 COPY config.example.yaml ./config.example.yaml
 COPY patch.py ./patch.py
+COPY supabase_inject.py ./supabase_inject.py
 RUN chmod +x scripts/*.sh
+
+# Run patches AT BUILD TIME (not runtime)
+# 1. DCM fix + Supabase sync injection into gateway_state.py
+# 2. DCM fix only if supabase_inject fails (it includes DCM fix too)
+RUN python3 /app/supabase_inject.py
 
 # Persistent mount point
 VOLUME ["/app/buckets"]
@@ -31,8 +37,6 @@ ENV OMBRE_BUCKETS_DIR=/app/buckets
 EXPOSE 8000
 EXPOSE 8010
 
-# 1. patch.py: DCM fix + inject Supabase sync into gateway_state.py source
-# 2. Set up persistent config.yaml via symlink
-# 3. patch_config.py: set multi-upstream (does NOT change port)
-# 4. Start Brain(8000) + Gateway(8010)
-CMD ["sh", "-c", "python3 /app/patch.py; mkdir -p /app/persistent && cp /app/config.example.yaml /app/persistent/config.yaml && ln -sf /app/persistent/config.yaml /app/config.yaml; python3 /app/patch_config.py; python server.py & python gateway.py & wait"]
+# At runtime: only config setup + start services
+# patch_config.py handles multi-upstream (runs after symlink)
+CMD ["sh", "-c", "mkdir -p /app/persistent && cp /app/config.example.yaml /app/persistent/config.yaml && ln -sf /app/persistent/config.yaml /app/config.yaml; python3 /app/patch_config.py; python server.py & python gateway.py & wait"]
