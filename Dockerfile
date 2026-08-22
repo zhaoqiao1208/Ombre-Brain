@@ -31,8 +31,8 @@ ENV OMBRE_BUCKETS_DIR=/app/buckets
 EXPOSE 8000
 EXPOSE 8010
 
-# 1. Apply DCM fix + change gateway port to 8011
-# 2. Set up persistent config.yaml via symlink
-# 3. Apply multi-upstream gateway patch to config.yaml
+# 1. Apply DCM fix to reflection_engine.py
+# 2. ALWAYS re-copy config from source (don't trust persistent volume's old copy)
+# 3. patch_config.py changes port 8010->8011 and sets multi-upstream
 # 4. Start Brain(8000) + Gateway(8011) + SupabaseProxy(8010)
-CMD ["sh", "-c", "python3 /app/patch.py; mkdir -p /app/persistent && ([ -f /app/persistent/config.yaml ] || cp /app/config.example.yaml /app/persistent/config.yaml) && ln -sf /app/persistent/config.yaml /app/config.yaml; python3 /app/patch_config.py; python server.py & python gateway.py & python supabase_proxy.py & wait"]
+CMD ["sh", "-c", "python3 /app/patch.py; mkdir -p /app/persistent && cp /app/config.example.yaml /app/persistent/config.yaml && ln -sf /app/persistent/config.yaml /app/config.yaml; python3 /app/patch_config.py; python server.py & python gateway.py & python supabase_proxy.py & wait"]
