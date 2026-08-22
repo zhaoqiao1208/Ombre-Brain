@@ -561,6 +561,22 @@ class GatewayService:
             min(30.0, float(self.gateway_cfg.get("domain_sentinel_timeout_seconds", 4.0))),
         )
         self.domain_sentinel_enable_thinking = False
+        self.auto_memory_extraction_enabled = self._bool_config_value(
+            self.gateway_cfg.get("auto_memory_extraction_enabled"),
+            True,
+        )
+        self.auto_memory_extraction_interval = max(
+            1,
+            int(self.gateway_cfg.get("auto_memory_extraction_interval", 10)),
+        )
+        self.auto_memory_extraction_max_tokens = max(
+            256,
+            min(2048, int(self.gateway_cfg.get("auto_memory_extraction_max_tokens", 1024))),
+        )
+        self.auto_memory_extraction_timeout = max(
+            5.0,
+            min(60.0, float(self.gateway_cfg.get("auto_memory_extraction_timeout", 15.0))),
+        )
         self.dynamic_top_k = int(self.gateway_cfg.get("dynamic_top_k", 10))
         self.semantic_candidate_top_k = max(
             self.dynamic_top_k,
@@ -3975,6 +3991,238 @@ class GatewayService:
             round_id,
             recalled_ids,
         )
+        if self.auto_memory_extraction_enabled:
+            try:
+                asyncio.create_task(self._auto_extract_memory(session_id, round_id))
+            except Exception as exc:
+                logger.warning(
+                    "Auto memory extraction scheduling failed | session=%s round=%s error=%s",
+                    session_id,
+                    round_id,
+                    exc,
+                )
+
+    async def _auto_extract_memory(self, session_id: str, round_id: int) -> None:
+        """
+        Auto-extract memory from recent conversation turns.
+
+        Triggered every N rounds (configured via auto_memory_extraction_interval).
+        Pulls recent turns from state_store, asks the domain_sentinel LLM to
+        decide if there's anything worth remembering, and if so, creates a
+        dynamic memory bucket.
+        """
+        try:
+            profile_id = str(getattr(self.persona_engine, "profile_id", "") or "default")
+            if round_id <= 0 or round_id % self.auto_memory_extraction_interval != 0:
+                return
+            if not self.domain_sentinel_model:
+                logger.info("Auto memory extraction skipped | reason=no_sentinel_model")
+                return
+            if not self.domain_sentinel_base_url or not self.domain_sentinel_api_key:
+                logger.info("Auto memory extraction skipped | reason=sentinel_api_not_configured")
+                return
+
+            turns = self.state_store.list_recent_conversation_turns(
+                profile_id=profile_id,
+                session_id=session_id,
+                limit=self.auto_memory_extraction_interval + 2,
+                hours=6,
+            )
+            if not turns or len(turns) < 2:
+                logger.info("Auto memory extraction skipped | session=%s reason=insufficient_turns", session_id)
+                return
+
+            transcript_lines = []
+            for turn in reversed(turns):
+                user_text = self._clean_conversation_turn_text(turn.get("user_text", ""))
+                assistant_text = self._clean_conversation_turn_text(turn.get("assistant_text", ""))
+                if user_text:
+                    transcript_lines.append(f"用户: {self._clip_text(user_text, 500)}")
+                if assistant_text:
+                    transcript_lines.append(f"AI: {self._clip_text(assistant_text, 500)}")
+            transcript = "\n".join(transcript_lines)
+
+            if len(transcript.strip()) < 20:
+                logger.info("Auto memory extraction skipped | session=%s reason=transcript_too_short", session_id)
+                return
+
+            ai_name = str(self.identity.get("ai_name") or "AI")
+            user_name = str(self.identity.get("user_display_name") or "用户")
+
+            system_prompt = (
+                f"你是{ai_name}的记忆系统。分析以下{user_name}和{ai_name}的最近对话，"
+                "判断是否有值得长期记忆的内容。\n\n"
+                "值得记忆的内容包括：\n"
+                "- 重要的事实信息（偏好、计划、人际关系、生活事件）\n"
+                "- 情感时刻（重要的互动、心动的瞬间、温暖的交流）\n"
+                "- 承诺或约定\n"
+                "- 重要的观点或决定\n\n"
+                "不值得记忆的内容：\n"
+                "- 日常闲聊（吃了什么、在干嘛）\n"
+                "- 纯技术问答\n"
+                "- 情绪宣泄但没有实质内容\n"
+                "- 已经被记忆过的重复内容\n\n"
+                "如果值得记忆，返回JSON，包含以下字段：\n"
+                '{"should_remember": true, "name": "简短标题", "summary": "2-3句话摘要", '
+                '"domain": ["relationship|life|tech|project|general"], "tags": ["标签1", "标签2"], '
+                '"valence": 0.0-1.0, "arousal": 0.0-1.0, "importance": 1-10, "reason": "为什么值得记忆"}\n\n'
+                "如果不值得记忆，返回：\n"
+                '{"should_remember": false, "reason": "为什么不需要"}\n\n'
+                "只返回JSON，不要其他文字。"
+            )
+
+            payload = {
+                "model": self.domain_sentinel_model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": transcript},
+                ],
+                "temperature": 0.3,
+                "max_tokens": self.auto_memory_extraction_max_tokens,
+                "stream": False,
+                "response_format": {"type": "json_object"},
+                "enable_thinking": False,
+            }
+
+            response = await asyncio.wait_for(
+                self.http_client.post(
+                    f"{self.domain_sentinel_base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.domain_sentinel_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                ),
+                timeout=self.auto_memory_extraction_timeout,
+            )
+
+            if response.status_code >= 400:
+                logger.warning(
+                    "Auto memory extraction LLM failed | session=%s status=%s",
+                    session_id,
+                    response.status_code,
+                )
+                return
+
+            body = response.json()
+            content = self._chat_completion_content(body)
+            if not content:
+                logger.info("Auto memory extraction empty response | session=%s", session_id)
+                return
+
+            text = content.strip()
+            if text.startswith("```"):
+                text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+                text = re.sub(r"\s*```$", "", text).strip()
+            if not text.startswith("{"):
+                start = text.find("{")
+                end = text.rfind("}")
+                if start >= 0 and end > start:
+                    text = text[start : end + 1]
+
+            try:
+                result = json.loads(text)
+            except json.JSONDecodeError as exc:
+                logger.warning(
+                    "Auto memory extraction JSON parse failed | session=%s error=%s",
+                    session_id,
+                    exc,
+                )
+                return
+
+            if not isinstance(result, dict) or not result.get("should_remember"):
+                logger.info(
+                    "Auto memory extraction decided not worth remembering | session=%s reason=%s",
+                    session_id,
+                    result.get("reason", "unknown"),
+                )
+                return
+
+            name = str(result.get("name") or "").strip()[:100]
+            summary = str(result.get("summary") or "").strip()
+            if not name or not summary:
+                logger.info(
+                    "Auto memory extraction missing name or summary | session=%s",
+                    session_id,
+                )
+                return
+
+            raw_domains = result.get("domain")
+            if isinstance(raw_domains, str):
+                raw_domains = [raw_domains]
+            if not isinstance(raw_domains, list) or not raw_domains:
+                raw_domains = ["general"]
+            domains = []
+            for d in raw_domains:
+                key = normalize_domain_key(str(d))
+                if key and key in DOMAIN_SENTINEL_ALLOWED_DOMAINS and key not in domains:
+                    domains.append(key)
+            if not domains:
+                domains = ["general"]
+
+            raw_tags = result.get("tags")
+            if isinstance(raw_tags, str):
+                raw_tags = [raw_tags]
+            if not isinstance(raw_tags, list):
+                raw_tags = []
+            tags = [str(t).strip() for t in raw_tags if str(t).strip()][:10]
+            tags.append("auto_extraction")
+
+            try:
+                valence = max(0.0, min(1.0, float(result.get("valence", 0.5))))
+            except (TypeError, ValueError):
+                valence = 0.5
+            try:
+                arousal = max(0.0, min(1.0, float(result.get("arousal", 0.3))))
+            except (TypeError, ValueError):
+                arousal = 0.3
+            try:
+                importance = max(1, min(10, int(result.get("importance", 5))))
+            except (TypeError, ValueError):
+                importance = 5
+
+            bucket_id = await self.bucket_mgr.create(
+                content=summary,
+                tags=tags,
+                importance=importance,
+                domain=domains,
+                valence=valence,
+                arousal=arousal,
+                bucket_type="dynamic",
+                name=name,
+                source="auto_extraction",
+                confidence=0.7,
+                extra_metadata={
+                    "auto_extraction_round": round_id,
+                    "auto_extraction_session": session_id,
+                    "extraction_reason": str(result.get("reason") or "")[:200],
+                },
+            )
+
+            self._clear_gateway_bucket_cache()
+
+            logger.info(
+                "Auto memory extraction created bucket | session=%s round=%s bucket_id=%s name=%s domain=%s",
+                session_id,
+                round_id,
+                bucket_id,
+                name,
+                domains,
+            )
+
+        except asyncio.TimeoutError:
+            logger.warning(
+                "Auto memory extraction timed out | session=%s round=%s",
+                session_id,
+                round_id,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Auto memory extraction failed | session=%s round=%s error=%s",
+                session_id,
+                round_id,
+                exc,
+            )
 
     @staticmethod
     def _assistant_message_has_output(assistant_message: dict[str, Any] | None) -> bool:
