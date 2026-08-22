@@ -1,18 +1,8 @@
 #!/usr/bin/env python3
 """
-Supabase Proxy — lightweight reverse proxy that sits between the client
-and Ombre Gateway, mirroring every chat turn to Supabase chat_messages.
-
-Architecture:
-  Client -> Proxy(:8010) -> Ombre Gateway(:8011) -> LLM
-                |
-                v
-           Supabase
-
-Env vars:
-  OMBRE_SUPABASE_URL   — e.g. https://xxx.supabase.co
-  OMBRE_SUPABASE_KEY   — anon key or service role key
-  OMBRE_GATEWAY_TOKEN  — forwarded to Ombre Gateway as Bearer token
+Supabase Proxy — reverse proxy on port 8010, forwards to Ombre Gateway on 8011.
+Intercepts every chat request/response and mirrors to Supabase.
+Works regardless of tool_calls or record_conversation_turn skipping.
 """
 
 import json
@@ -34,10 +24,10 @@ LISTEN_PORT = 8010
 def _get_env(name):
     return os.environ.get(name, "").strip()
 
-def _is_supabase_configured():
+def _is_configured():
     return bool(_get_env("OMBRE_SUPABASE_URL") and _get_env("OMBRE_SUPABASE_KEY"))
 
-def _insert_supabase_row(content, role, conversation_id="", assistant_id=""):
+def _insert_row(content, role, conversation_id="", assistant_id=""):
     base = _get_env("OMBRE_SUPABASE_URL").rstrip("/")
     key = _get_env("OMBRE_SUPABASE_KEY")
     url = f"{base}/rest/v1/chat_messages"
@@ -52,24 +42,24 @@ def _insert_supabase_row(content, role, conversation_id="", assistant_id=""):
     req.add_header("Authorization", f"Bearer {key}")
     req.add_header("Content-Type", "application/json")
     req.add_header("Prefer", "return=minimal")
-    with urllib.request.urlopen(req, timeout=5) as resp:
+    with urllib.request.urlopen(req, timeout=5):
         pass
 
-def _sync_to_supabase(user_text, assistant_text, conversation_id, assistant_id):
-    if not _is_supabase_configured():
-        logger.warning("Supabase not configured, skipping sync")
+def _sync(user_text, assistant_text, conv_id, asst_id):
+    if not _is_configured():
+        logger.warning("Supabase not configured, skipping")
         return
     try:
         if user_text and user_text.strip():
-            _insert_supabase_row(user_text.strip(), "user", conversation_id, assistant_id)
-            logger.info("Supabase: wrote user message (%d chars)", len(user_text.strip()))
+            _insert_row(user_text.strip(), "user", conv_id, asst_id)
+            logger.info("Wrote user message (%d chars)", len(user_text.strip()))
         if assistant_text and assistant_text.strip():
-            _insert_supabase_row(assistant_text.strip(), "assistant", conversation_id, assistant_id)
-            logger.info("Supabase: wrote assistant message (%d chars)", len(assistant_text.strip()))
+            _insert_row(assistant_text.strip(), "assistant", conv_id, asst_id)
+            logger.info("Wrote assistant message (%d chars)", len(assistant_text.strip()))
     except urllib.error.HTTPError as exc:
-        logger.error("Supabase HTTP error: %s %s", exc.code, exc.reason)
+        logger.error("HTTP error: %s %s", exc.code, exc.reason)
     except Exception as exc:
-        logger.error("Supabase sync failed: %s", exc)
+        logger.error("Sync failed: %s", exc)
 
 def _extract_user_text(body):
     messages = body.get("messages") if isinstance(body, dict) else None
@@ -78,8 +68,7 @@ def _extract_user_text(body):
     user_msgs = [m for m in messages if isinstance(m, dict) and m.get("role") == "user"]
     if not user_msgs:
         return ""
-    last = user_msgs[-1]
-    content = last.get("content", "")
+    content = user_msgs[-1].get("content", "")
     if isinstance(content, str):
         return content
     if isinstance(content, list):
@@ -92,7 +81,7 @@ def _extract_user_text(body):
         return "\n".join(parts)
     return str(content or "")
 
-def _extract_assistant_text_from_chunk(data):
+def _extract_assistant_from_chunk(data):
     try:
         obj = json.loads(data) if isinstance(data, str) else data
         choice = obj.get("choices", [{}])[0] if isinstance(obj, dict) else {}
@@ -101,7 +90,7 @@ def _extract_assistant_text_from_chunk(data):
     except Exception:
         return ""
 
-def _extract_assistant_text_nonstream(body):
+def _extract_assistant_nonstream(body):
     try:
         choice = body.get("choices", [{}])[0]
         msg = choice.get("message", {})
@@ -124,54 +113,32 @@ def _extract_assistant_text_nonstream(body):
 class ProxyHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
-    def _forward_to_upstream(self, method, path):
-        content_length = int(self.headers.get("Content-Length", 0))
-        body = self.rfile.read(content_length) if content_length > 0 else b""
-
-        url = f"http://{UPSTREAM_HOST}:{UPSTREAM_PORT}{path}"
-        req = urllib.request.Request(url, data=body if body else None, method=method)
-
-        for key, val in self.headers.items():
-            low = key.lower()
-            if low in ("host", "content-length", "transfer-encoding"):
-                continue
-            req.add_header(key, val)
-
+    def _proxy_get(self):
+        url = f"http://{UPSTREAM_HOST}:{UPSTREAM_PORT}{self.path}"
+        req = urllib.request.Request(url, method="GET")
+        for k, v in self.headers.items():
+            if k.lower() not in ("host", "content-length", "transfer-encoding"):
+                req.add_header(k, v)
         try:
-            resp = urllib.request.urlopen(req, timeout=300)
-        except urllib.error.HTTPError as exc:
-            resp_body = exc.read()
-            self.send_response(exc.code)
-            for k, v in exc.headers.items():
+            resp = urllib.request.urlopen(req, timeout=30)
+            body = resp.read()
+            self.send_response(resp.status)
+            for k, v in resp.headers.items():
                 if k.lower() not in ("transfer-encoding", "connection"):
                     self.send_header(k, v)
-            self.send_header("Content-Length", str(len(resp_body)))
+            self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            self.wfile.write(resp_body)
-            return None
+            self.wfile.write(body)
         except Exception as exc:
-            logger.error("Upstream connection failed: %s", exc)
-            err = json.dumps({"error": {"message": str(exc)}}).encode()
+            logger.error("GET proxy error: %s", exc)
+            err = json.dumps({"error": str(exc)}).encode()
             self.send_response(502)
-            self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(err)))
             self.end_headers()
             self.wfile.write(err)
-            return None
-        return resp
 
     def do_GET(self):
-        resp = self._forward_to_upstream("GET", self.path)
-        if resp is None:
-            return
-        resp_body = resp.read()
-        self.send_response(resp.status)
-        for k, v in resp.headers.items():
-            if k.lower() not in ("transfer-encoding", "connection"):
-                self.send_header(k, v)
-        self.send_header("Content-Length", str(len(resp_body)))
-        self.end_headers()
-        self.wfile.write(resp_body)
+        self._proxy_get()
 
     def do_POST(self):
         content_length = int(self.headers.get("Content-Length", 0))
@@ -189,11 +156,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
 
         url = f"http://{UPSTREAM_HOST}:{UPSTREAM_PORT}{self.path}"
         req = urllib.request.Request(url, data=body_raw, method="POST")
-        for key, val in self.headers.items():
-            low = key.lower()
-            if low in ("host", "content-length", "transfer-encoding"):
-                continue
-            req.add_header(key, val)
+        for k, v in self.headers.items():
+            if k.lower() not in ("host", "content-length", "transfer-encoding"):
+                req.add_header(k, v)
 
         try:
             resp = urllib.request.urlopen(req, timeout=300)
@@ -208,10 +173,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.wfile.write(resp_body)
             return
         except Exception as exc:
-            logger.error("Upstream connection failed: %s", exc)
-            err = json.dumps({"error": {"message": str(exc)}}).encode()
+            logger.error("Upstream error: %s", exc)
+            err = json.dumps({"error": str(exc)}).encode()
             self.send_response(502)
-            self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(err)))
             self.end_headers()
             self.wfile.write(err)
@@ -241,9 +205,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
                             payload = line[5:].strip()
                             if payload == "[DONE]":
                                 continue
-                            aggregated += _extract_assistant_text_from_chunk(payload)
+                            aggregated += _extract_assistant_from_chunk(payload)
             except Exception as exc:
-                logger.error("Stream proxy error: %s", exc)
+                logger.error("Stream error: %s", exc)
             finally:
                 try:
                     self.wfile.flush()
@@ -251,10 +215,12 @@ class ProxyHandler(BaseHTTPRequestHandler):
                     pass
 
             threading.Thread(
-                target=_sync_to_supabase,
+                target=_sync,
                 args=(user_text, aggregated, session_id, assistant_id),
                 daemon=True,
             ).start()
+            logger.info("Stream completed, synced user=%d chars assistant=%d chars",
+                        len(user_text or ""), len(aggregated or ""))
         else:
             resp_body = resp.read()
             self.send_response(resp.status)
@@ -267,15 +233,17 @@ class ProxyHandler(BaseHTTPRequestHandler):
 
             try:
                 resp_json = json.loads(resp_body)
-                assistant_text = _extract_assistant_text_nonstream(resp_json)
+                assistant_text = _extract_assistant_nonstream(resp_json)
             except Exception:
                 assistant_text = ""
 
             threading.Thread(
-                target=_sync_to_supabase,
+                target=_sync,
                 args=(user_text, assistant_text, session_id, assistant_id),
                 daemon=True,
             ).start()
+            logger.info("Non-stream completed, synced user=%d chars assistant=%d chars",
+                        len(user_text or ""), len(assistant_text or ""))
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -289,11 +257,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
 
 
 def main():
-    logger.info("Supabase Proxy starting on port %d", LISTEN_PORT)
-    logger.info("Forwarding to upstream at %s:%d", UPSTREAM_HOST, UPSTREAM_PORT)
-    logger.info("Supabase configured: %s", _is_supabase_configured())
-    if not _is_supabase_configured():
-        logger.warning("OMBRE_SUPABASE_URL or OMBRE_SUPABASE_KEY not set!")
+    logger.info("Starting on port %d, forwarding to %s:%d", LISTEN_PORT, UPSTREAM_HOST, UPSTREAM_PORT)
+    logger.info("Supabase configured: %s", _is_configured())
     server = HTTPServer(("0.0.0.0", LISTEN_PORT), ProxyHandler)
     server.serve_forever()
 
