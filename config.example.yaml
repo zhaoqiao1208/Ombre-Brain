@@ -299,62 +299,29 @@ moment_annotations:
 # 核心记忆 + 最近上下文 + 动态召回记忆
 gateway:
   host: "0.0.0.0"
-  port: 8010
+  port: 8011
   default_session_id: "main"      # used only by compatible routes when the header is omitted
-  upstream_base_url: "https://opencode.ai/zen/go/v1"
-  upstream_default_model: "deepseek-v4-flash"
-  upstream_models:
-    - "deepseek-v4-flash"
-  # Optional prompt cache hints / 可选提示缓存参数
-  # openai: send prompt_cache_key using X-Ombre-Session-Id; leave empty for other providers.
-  # anthropic: send top-level cache_control for proxies that require it.
-  # anthropic_explicit: put cache_control on system/tools/prior assistant history.
-  # openai: 使用 X-Ombre-Session-Id 发送 prompt_cache_key；
-  # anthropic: 给只认顶层 cache_control 的中转站使用；
-  # anthropic_explicit: 在 system/tools/上一条 assistant 历史上显式打断点。
-  prompt_cache: "openai"
+  upstreams:
+    - name: "refable"
+      protocol: "openai"
+      base_url: "https://api.refable.ai/v1"
+      api_key_env: "OMBRE_GATEWAY_REFABLE_API_KEY"
+      default_model: "gemini-3.7-flash-tiered"
+      prompt_cache: ""
+      models:
+        - id: "gemini-flash"
+          upstream_model: "gemini-3.7-flash-tiered"
+    - name: "kiro"
+      protocol: "openai"
+      base_url: "https://hk.xn--0xv303ar5c.com/v1"
+      api_key_env: "OMBRE_GATEWAY_KIRO_API_KEY"
+      default_model: "[kiro量高缓]claude-opus-4-6"
+      prompt_cache: ""
+      models:
+        - id: "claude-opus"
+          upstream_model: "[kiro量高缓]claude-opus-4-6"
+  prompt_cache: ""
   # prompt_cache_retention: "24h"  # Optional for supported OpenAI models / 支持模型可选
-  # Optional multi-upstream mode / 可选多上游模式
-  # When upstreams is set, the gateway aggregates all listed models and routes
-  # each request by model name to the matching upstream.
-  # Dict model entries can expose a gateway alias while sending the real model
-  # name to upstream.
-  # 配置 upstreams 后，网关会聚合所有模型，并按模型名路由到对应上游。
-  # models 可用字典写别名：id 是客户端看到的名字，upstream_model 是发给上游的真实名字。
-  # upstreams:
-  #   - name: "deepseek"
-  #     protocol: "openai"  # default; forwards to /chat/completions
-  #     base_url: "https://api.deepseek.com"
-  #     api_key_env: "OMBRE_GATEWAY_DEEPSEEK_API_KEY"
-  #     # Optional fallback keys. Retryable errors switch to the next key.
-  #     # 可选备用 key。遇到可重试错误时自动换下一个 key。
-  #     # api_key_envs:
-  #     #   - "OMBRE_GATEWAY_DEEPSEEK_API_KEY_1"
-  #     #   - "OMBRE_GATEWAY_DEEPSEEK_API_KEY_2"
-  #     default_model: "deepseek-v4-flash"
-  #     prompt_cache: ""  # DeepSeek uses automatic prefix cache / DeepSeek 使用自动前缀缓存
-  #     models:
-  #       - "deepseek-v4-flash"
-  #       - "deepseek-v4-pro"
-  #   - name: "siliconflow"
-  #     protocol: "openai"
-  #     base_url: "https://api.siliconflow.cn/v1"
-  #     api_key_env: "OMBRE_GATEWAY_SILICONFLOW_API_KEY"
-  #     models:
-  #       - "Qwen/Qwen3-32B"
-  #       - "THUDM/GLM-4-32B"
-  #   - name: "anthropic"
-  #     protocol: "anthropic"  # forwards /v1/messages to upstream /messages
-  #     base_url: "https://api.anthropic.com/v1"
-  #     api_key_env: "OMBRE_GATEWAY_ANTHROPIC_API_KEY"
-  #     anthropic_version: "2023-06-01"
-  #     prompt_cache: "anthropic_explicit"  # recommended for official Claude / most Anthropic-compatible proxies
-  #     # prompt_cache: "anthropic"  # compatibility mode for proxies that require top-level cache_control
-  #     # prompt_cache_retention: "1h"  # optional; default cache TTL is 5 minutes
-  #     default_model: "claude-sonnet"
-  #     models:
-  #       - id: "claude-sonnet"
-  #         upstream_model: "claude-sonnet-4-6"
   head_recent_hours: 72
   recent_context_reentry_idle_hours: 24
   recent_context_cooldown_hours: 6
