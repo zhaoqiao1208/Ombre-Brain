@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Startup patch: fix daily_chat_memory + change gateway port to 8011"""
+"""Startup patch: fix daily_chat_memory issues in reflection_engine.py"""
 
 import os
 import sys
@@ -41,25 +41,5 @@ try:
     print('PATCH: DCM fix applied', file=sys.stderr, flush=True)
 except Exception as e:
     print(f'PATCH: DCM fix FAILED: {e}', file=sys.stderr, flush=True)
-
-# ============================================================
-# 2. Change gateway port from 8010 to 8011 in config.yaml
-#    so supabase_proxy.py can listen on 8010
-# ============================================================
-
-try:
-    config_path = '/app/config.yaml'
-    with open(config_path, 'r') as f:
-        config = f.read()
-
-    if 'port: 8011' in config:
-        print('PATCH: gateway port already 8011, skipping', file=sys.stderr, flush=True)
-    else:
-        config = config.replace('port: 8010', 'port: 8011', 1)
-        with open(config_path, 'w') as f:
-            f.write(config)
-        print('PATCH: gateway port changed to 8011', file=sys.stderr, flush=True)
-except Exception as e:
-    print(f'PATCH: gateway port change FAILED: {e}', file=sys.stderr, flush=True)
 
 print("========== PATCH.PY DONE ==========", file=sys.stderr, flush=True)
