@@ -3190,7 +3190,82 @@
       <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">留空复用脱水配置；点击“保存密钥到 .env”后重启仍保留</div>
     </div>
 
+        <div class="config-section">
+      <h3>自主心跳 Heartbeat</h3>
+      <div class="config-row">
+        <label>心跳开关</label>
+        <select id="cfg-heartbeat-enabled"><option value="true">开启</option><option value="false">关闭</option></select>
+      </div>
+      <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">AI 在你不在时自己醒来活动、想念你、给你发 Telegram</div>
+      <div class="config-row">
+        <label>Telegram 机器人</label>
+        <select id="cfg-telegram-bot-enabled"><option value="true">开启</option><option value="false">关闭</option></select>
+      </div>
+      <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">开启后可从 Telegram 跟 AI 聊天；需要配 Bot Token 和 Chat ID</div>
+      <div class="config-row">
+        <label>Bot Token</label>
+        <input type="password" id="cfg-heartbeat-telegram-token" placeholder="留空用环境变量" />
+      </div>
+      <div class="config-row">
+        <label>Chat ID</label>
+        <input type="text" id="cfg-heartbeat-telegram-chat-id" placeholder="你的 Telegram Chat ID" />
+      </div>
+      <div class="config-row">
+        <label>最短间隔(分)</label>
+        <input type="number" id="cfg-heartbeat-min-interval" min="5" max="1440" />
+      </div>
+      <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">最少多久醒一次，默认 30 分钟</div>
+      <div class="config-row">
+        <label>最长间隔(分)</label>
+        <input type="number" id="cfg-heartbeat-max-interval" min="5" max="1440" />
+      </div>
+      <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">最久多久醒一次，默认 180 分钟（3小时）</div>
+      <div class="config-row">
+        <label>活动起始时</label>
+        <input type="number" id="cfg-heartbeat-active-start" min="0" max="24" />
+      </div>
+      <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">只在此时段活动，避免半夜打扰。默认早8点</div>
+      <div class="config-row">
+        <label>活动结束时</label>
+        <input type="number" id="cfg-heartbeat-active-end" min="0" max="28" />
+      </div>
+      <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">可超过24，25=凌晨1点。默认25</div>
+      <div class="config-row">
+        <label>心跳模型</label>
+        <input type="text" id="cfg-heartbeat-model" placeholder="留空复用召回模型" />
+      </div>
+      <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">心跳用的 LLM 模型。留空自动用主域哨兵模型</div>
+      <div style="margin-top:14px;margin-bottom:8px;font-size:12px;font-weight:600;color:var(--text);">Telegram 双向聊天</div>
+      <div class="config-row">
+        <label>TG 聊天模型</label>
+        <input type="text" id="cfg-telegram-model" placeholder="留空复用上游默认模型" />
+      </div>
+      <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">Telegram 回复用的模型。留空自动用上游默认模型</div>
+      <div class="config-row">
+        <label>TG 聊天人设</label>
+        <textarea id="cfg-telegram-system-prompt" placeholder="Telegram 专属人设/语气，留空用默认" style="width:calc(100% - 122px);min-height:56px;font-family:inherit;font-size:13px;resize:vertical;border-radius:6px;padding:6px 10px;background:var(--bg);border:1px solid var(--border);color:var(--text);"></textarea>
+      </div>
+      <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">只在 Telegram 生效的人设提示词。留空不额外注入</div>
+      <div style="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:12px;color:var(--text-light);">
+        心跳活动存在独立日志，不进记忆桶。可在 <a href="/heartbeat" target="_blank" style="color:var(--accent);">心跳日记页面</a> 查看（需 Gateway Token）
+      </div>
+    </div>
+
     <div class="config-section">
+      <h3>心跳注入</h3>
+      <div class="config-row">
+        <label>注入开关</label>
+        <select id="cfg-heartbeat-inject-enabled"><option value="true">开启</option><option value="false">关闭</option></select>
+      </div>
+      <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">开启后，正常聊天时 AI 能想起自己最近的心跳活动</div>
+      <div class="config-row">
+        <label>冷却(小时)</label>
+        <input type="number" id="cfg-heartbeat-inject-cooldown" min="0" max="168" step="0.5" />
+      </div>
+      <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">距离上次注入不超过此时间就不重复塞。0=每次都塞。默认 6 小时</div>
+    </div>
+
+<div class="config-section">
       <h3>自动记忆模型</h3>
       <div class="config-row">
         <label>模型</label>
@@ -8409,7 +8484,23 @@ async function loadConfig() {
     document.getElementById('cfg-domain-sentinel-key').placeholder =
       '当前: ' + ((cfg.gateway && cfg.gateway.domain_sentinel_api_key_masked) || ((cfg.gateway && cfg.gateway.domain_sentinel_api_ready) ? '***' : '复用脱水/未设置'));
     document.getElementById('cfg-domain-sentinel-key').value = '';
-    document.getElementById('cfg-query-resurface-enabled').value =
+
+    // Heartbeat config
+    var hbCfg = cfg.gateway || {};
+    document.getElementById('cfg-heartbeat-enabled').value = hbCfg.heartbeat_enabled !== false ? 'true' : 'false';
+    document.getElementById('cfg-telegram-bot-enabled').value = hbCfg.telegram_bot_enabled !== false ? 'true' : 'false';
+    document.getElementById('cfg-heartbeat-telegram-token').placeholder = hbCfg.heartbeat_telegram_bot_token ? '当前: ***' : '留空用环境变量';
+    document.getElementById('cfg-heartbeat-telegram-token').value = '';
+    document.getElementById('cfg-heartbeat-telegram-chat-id').value = hbCfg.heartbeat_telegram_chat_id || '';
+    document.getElementById('cfg-heartbeat-min-interval').value = hbCfg.heartbeat_min_interval_minutes ?? 30;
+    document.getElementById('cfg-heartbeat-max-interval').value = hbCfg.heartbeat_max_interval_minutes ?? 180;
+    document.getElementById('cfg-heartbeat-active-start').value = hbCfg.heartbeat_active_hours_start ?? 8;
+    document.getElementById('cfg-heartbeat-active-end').value = hbCfg.heartbeat_active_hours_end ?? 25;
+    document.getElementById('cfg-heartbeat-model').value = hbCfg.heartbeat_model || '';
+    document.getElementById('cfg-telegram-model').value = hbCfg.telegram_model || '';
+    document.getElementById('cfg-telegram-system-prompt').value = hbCfg.telegram_system_prompt || '';
+    document.getElementById('cfg-heartbeat-inject-enabled').value = hbCfg.heartbeat_inject_enabled !== false ? 'true' : 'false';
+    document.getElementById('cfg-heartbeat-inject-cooldown').value = hbCfg.heartbeat_inject_cooldown_hours ?? 6;    document.getElementById('cfg-query-resurface-enabled').value =
       (cfg.recall && cfg.recall.query_resurface_enabled) ? 'true' : 'false';
     var diffusion = cfg.memory_diffusion || {};
     document.getElementById('cfg-diffusion-enabled').value = diffusion.enabled === false ? 'false' : 'true';
@@ -8639,6 +8730,18 @@ async function saveConfig(persist, persistEnv) {
       domain_sentinel_enabled: document.getElementById('cfg-domain-sentinel-enabled').value === 'true',
       domain_sentinel_model: document.getElementById('cfg-domain-sentinel-model').value,
       domain_sentinel_base_url: document.getElementById('cfg-domain-sentinel-url').value,
+      heartbeat_enabled: document.getElementById('cfg-heartbeat-enabled').value === 'true',
+      telegram_bot_enabled: document.getElementById('cfg-telegram-bot-enabled').value === 'true',
+      heartbeat_telegram_chat_id: document.getElementById('cfg-heartbeat-telegram-chat-id').value,
+      heartbeat_min_interval_minutes: numberValue('cfg-heartbeat-min-interval', 30),
+      heartbeat_max_interval_minutes: numberValue('cfg-heartbeat-max-interval', 180),
+      heartbeat_active_hours_start: numberValue('cfg-heartbeat-active-start', 8),
+      heartbeat_active_hours_end: numberValue('cfg-heartbeat-active-end', 25),
+      heartbeat_model: document.getElementById('cfg-heartbeat-model').value,
+      telegram_model: document.getElementById('cfg-telegram-model').value,
+      telegram_system_prompt: document.getElementById('cfg-telegram-system-prompt').value,
+      heartbeat_inject_enabled: document.getElementById('cfg-heartbeat-inject-enabled').value === 'true',
+      heartbeat_inject_cooldown_hours: floatValue('cfg-heartbeat-inject-cooldown', 6),
     };
     candidate.reflection = {
       model: document.getElementById('cfg-reflection-model').value,

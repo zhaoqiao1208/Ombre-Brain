@@ -12400,6 +12400,14 @@ async def api_config_update(request):
             gateway_cfg["memory_detail_recall_budget"] = _int_between(g["memory_detail_recall_budget"], 1200, 200, 4000)
             gateway_hot_update_body["memory_detail_recall_budget"] = gateway_cfg["memory_detail_recall_budget"]
             updated.append("gateway.memory_detail_recall_budget")
+        if "telegram_model" in g:
+            gateway_cfg["telegram_model"] = str(g["telegram_model"] or "").strip()
+            gateway_hot_update_body["telegram_model"] = gateway_cfg["telegram_model"]
+            updated.append("gateway.telegram_model")
+        if "telegram_system_prompt" in g:
+            gateway_cfg["telegram_system_prompt"] = str(g["telegram_system_prompt"] or "").strip()
+            gateway_hot_update_body["telegram_system_prompt"] = gateway_cfg["telegram_system_prompt"]
+            updated.append("gateway.telegram_system_prompt")
         if gateway_hot_update_body:
             gateway_hot_update_payload["gateway"] = gateway_hot_update_body
 
@@ -12893,6 +12901,10 @@ async def api_config_update(request):
                         200,
                         4000,
                     )
+                if "telegram_model" in body["gateway"]:
+                    sc_gateway["telegram_model"] = str(body["gateway"]["telegram_model"] or "").strip()
+                if "telegram_system_prompt" in body["gateway"]:
+                    sc_gateway["telegram_system_prompt"] = str(body["gateway"]["telegram_system_prompt"] or "").strip()
 
             if "self_anchor" in body and isinstance(body["self_anchor"], dict):
                 sc_self_anchor = save_config.setdefault("self_anchor", {})

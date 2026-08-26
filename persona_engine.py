@@ -435,7 +435,7 @@ class PersonaStateEngine:
                 ],
                 **self._completion_options(
                     temperature=0.0,
-                    max_tokens=120,
+                    max_tokens=1000,
                     timeout=self.conflict_nudge_timeout_seconds,
                 ),
             )

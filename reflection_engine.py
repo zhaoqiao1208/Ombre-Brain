@@ -454,7 +454,7 @@ class ReflectionEngine:
         )
         self.daily_activity_summary_max_tokens = max(
             80,
-            min(1000, int(cfg.get("daily_activity_summary_max_tokens", 320))),
+            min(4000, int(cfg.get("daily_activity_summary_max_tokens", 2000))),
         )
         self.dehydration_base_url = str(dehy_cfg.get("base_url") or "").strip().rstrip("/")
         self.dehydration_model = str(dehy_cfg.get("model") or "").strip()
@@ -3590,7 +3590,7 @@ class ReflectionEngine:
                         {"role": "system", "content": self._diary_memory_prompt()},
                         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
                     ],
-                    **self._completion_options(max_tokens=min(self.max_tokens, 520), temperature=self.temperature),
+                    **self._completion_options(max_tokens=self.max_tokens, temperature=self.temperature),
                 )
                 raw = response.choices[0].message.content if response.choices else ""
                 parsed = self._parse_json_object(raw or "")
