@@ -552,7 +552,7 @@ persona:
   json_response_format: true     # request provider-native JSON output for Persona evaluators
   # api_key: ""                  # Use OMBRE_PERSONA_API_KEY; falls back to OMBRE_API_KEY
   temperature: 0.1
-  max_tokens: 500
+  max_tokens: 4000
   global_decay_hours: 168
   session_mood_half_life_minutes: 90
   max_relationship_delta: 0.03
@@ -619,7 +619,7 @@ reflection:
   thinking_mode: ""               # empty = model default; disabled/enabled can force Qwen-style thinking
   # api_key: ""                   # empty = OMBRE_REFLECTION_API_KEY or embedding.api_key
   temperature: 0.1
-  max_tokens: 700
+  max_tokens: 4000
   timezone: "Asia/Shanghai"
   daily_hour: 4                   # generate daily impression after this local hour
   daily_min_memory_items: 5        # ordinary memory/update items required before daily impression writes
@@ -643,7 +643,7 @@ reflection:
   daily_chat_memory_candidate_max_tokens: 3200
   daily_activity_summary_enabled: true      # writes one "what happened today" item into portrait recent_timeline
   daily_activity_summary_turn_limit: 0      # 0 = use all raw_events for that date; not sourced from auto-memory candidates
-  daily_activity_summary_max_tokens: 320
+  daily_activity_summary_max_tokens: 2000
   persona_events_limit: 12         # selected and deduped; persona events supplement daily weather only
   persona_events_scan_limit: 80
   weekly_enabled: false            # weekly impressions are off by default; daily impressions remain
