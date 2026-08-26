@@ -625,6 +625,14 @@ class GatewayService:
             self.gateway_cfg.get("telegram_bot_enabled"),
             True,
         )
+        self.telegram_system_prompt = str(
+            self.gateway_cfg.get("telegram_system_prompt")
+            or os.environ.get("OMBRE_TELEGRAM_SYSTEM_PROMPT", "")
+        ).strip()
+        self.telegram_model = str(
+            self.gateway_cfg.get("telegram_model")
+            or os.environ.get("OMBRE_TELEGRAM_MODEL", "")
+        ).strip() or self.upstream_default_model
         self._telegram_bot_task: asyncio.Task | None = None
         self._telegram_bot_offset: int = 0
         self._telegram_chat_histories: dict[str, list[dict[str, str]]] = {}
@@ -4715,13 +4723,15 @@ class GatewayService:
             if len(history) > self._telegram_chat_max_history * 2:
                 history[:] = history[-(self._telegram_chat_max_history * 2):]
 
-            model = self.upstream_default_model or (self.upstream_models[0] if self.upstream_models else "")
+            model = self.telegram_model or (self.upstream_models[0] if self.upstream_models else "")
             if not model:
                 logger.warning("Telegram chat skipped | reason=no_model")
                 await self._send_telegram_message("系统还没配置好模型，暂时无法回复。", chat_id=chat_id)
                 return
 
             messages = list(history)
+            if self.telegram_system_prompt:
+                messages.insert(0, {"role": "system", "content": self.telegram_system_prompt})
             payload = {
                 "model": model,
                 "messages": messages,
@@ -4778,6 +4788,23 @@ class GatewayService:
                 )
             except Exception as exc:
                 logger.warning("Telegram conversation turn record failed | error=%s", exc)
+
+            try:
+                await self._record_successful_round(
+                    session_id,
+                    recalled_ids,
+                    {
+                        "recent_context_injected": False,
+                        "active_reminder_ids": [],
+                    },
+                    user_message=user_text,
+                    assistant_message=assistant_message,
+                    model=model,
+                    client="telegram",
+                    route="/telegram/chat",
+                )
+            except Exception as exc:
+                logger.warning("Telegram round record failed | error=%s", exc)
 
             try:
                 await self._update_persona_after_assistant_message(
