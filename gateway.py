@@ -621,6 +621,14 @@ class GatewayService:
             or os.environ.get("OMBRE_HEARTBEAT_OB_BRIDGE_URL", "")
         ).strip()
         self._heartbeat_task: asyncio.Task | None = None
+        self.telegram_bot_enabled = self._bool_config_value(
+            self.gateway_cfg.get("telegram_bot_enabled"),
+            True,
+        )
+        self._telegram_bot_task: asyncio.Task | None = None
+        self._telegram_bot_offset: int = 0
+        self._telegram_chat_histories: dict[str, list[dict[str, str]]] = {}
+        self._telegram_chat_max_history = 20
         self.dynamic_top_k = int(self.gateway_cfg.get("dynamic_top_k", 10))
         self.semantic_candidate_top_k = max(
             self.dynamic_top_k,
@@ -887,6 +895,18 @@ class GatewayService:
         self.http_client = http_client or httpx.AsyncClient(timeout=60.0)
 
     async def close(self) -> None:
+        if self._telegram_bot_task is not None and not self._telegram_bot_task.done():
+            self._telegram_bot_task.cancel()
+            try:
+                await self._telegram_bot_task
+            except asyncio.CancelledError:
+                pass
+        if self._heartbeat_task is not None and not self._heartbeat_task.done():
+            self._heartbeat_task.cancel()
+            try:
+                await self._heartbeat_task
+            except asyncio.CancelledError:
+                pass
         if self.http_client and not getattr(self.http_client, "is_closed", False):
             await self.http_client.aclose()
 
@@ -4281,6 +4301,16 @@ class GatewayService:
             self.heartbeat_active_hours_end,
         )
 
+    def _start_telegram_bot(self) -> None:
+        """Start the Telegram Bot polling loop for bidirectional chat."""
+        if self._telegram_bot_task is not None:
+            return
+        if not self.heartbeat_telegram_bot_token:
+            logger.info("Telegram bot skipped | reason=no_bot_token")
+            return
+        self._telegram_bot_task = asyncio.create_task(self._telegram_bot_loop())
+        logger.info("Telegram bot started | polling for messages from chat_id=%s", self.heartbeat_telegram_chat_id)
+
     async def _heartbeat_loop(self) -> None:
         """Main heartbeat loop: random sleep -> awaken -> repeat."""
         import random as _random
@@ -4562,19 +4592,23 @@ class GatewayService:
             logger.warning("OB bridge error | action=%s error=%s", action, exc)
             return None
 
-    async def _send_telegram_message(self, text: str) -> bool:
+    async def _send_telegram_message(self, text: str, chat_id: str | None = None) -> bool:
         """Send a message via Telegram Bot API."""
+        target_chat_id = chat_id or self.heartbeat_telegram_chat_id
+        if not target_chat_id:
+            logger.warning("Telegram send skipped | reason=no_chat_id")
+            return False
         try:
             response = await self.http_client.post(
                 f"https://api.telegram.org/bot{self.heartbeat_telegram_bot_token}/sendMessage",
                 json={
-                    "chat_id": self.heartbeat_telegram_chat_id,
+                    "chat_id": target_chat_id,
                     "text": text,
                 },
                 timeout=15.0,
             )
             if response.status_code == 200:
-                logger.info("Telegram message sent | text=%s", text[:50])
+                logger.info("Telegram message sent | chat_id=%s text=%s", target_chat_id, text[:50])
                 return True
             else:
                 logger.warning(
@@ -4586,6 +4620,175 @@ class GatewayService:
         except Exception as exc:
             logger.warning("Telegram send error | error=%s", exc)
             return False
+
+    async def _telegram_bot_loop(self) -> None:
+        """Long-polling loop for Telegram Bot: receive messages and reply."""
+        bot_token = self.heartbeat_telegram_bot_token
+        allowed_chat_id = self.heartbeat_telegram_chat_id
+        if not bot_token or not allowed_chat_id:
+            logger.info("Telegram bot loop skipped | reason=no_token_or_chat_id")
+            return
+        logger.info("Telegram bot loop running | allowed_chat_id=%s", allowed_chat_id)
+        base_url = f"https://api.telegram.org/bot{bot_token}"
+        while True:
+            try:
+                params = {
+                    "offset": self._telegram_bot_offset,
+                    "timeout": 30,
+                    "limit": 10,
+                }
+                response = await asyncio.wait_for(
+                    self.http_client.post(
+                        f"{base_url}/getUpdates",
+                        json=params,
+                        timeout=40.0,
+                    ),
+                    timeout=45.0,
+                )
+                if response.status_code != 200:
+                    logger.warning(
+                        "Telegram getUpdates failed | status=%s body=%s",
+                        response.status_code,
+                        response.text[:200],
+                    )
+                    await asyncio.sleep(5)
+                    continue
+                data = response.json()
+                if not data.get("ok"):
+                    logger.warning("Telegram getUpdates not ok | data=%s", str(data)[:200])
+                    await asyncio.sleep(5)
+                    continue
+                updates = data.get("result") or []
+                for update in updates:
+                    self._telegram_bot_offset = int(update.get("update_id", 0)) + 1
+                    message = update.get("message") or update.get("edited_message")
+                    if not message:
+                        continue
+                    msg_chat_id = str(message.get("chat", {}).get("id", ""))
+                    if msg_chat_id != allowed_chat_id:
+                        logger.info(
+                            "Telegram message from unauthorized chat_id=%s (expected %s), ignoring",
+                            msg_chat_id, allowed_chat_id,
+                        )
+                        continue
+                    text = str(message.get("text", "")).strip()
+                    if not text:
+                        continue
+                    if text.startswith("/"):
+                        if text == "/clear" or text == "/reset":
+                            self._telegram_chat_histories.pop(msg_chat_id, None)
+                            await self._send_telegram_message("记忆已清空，重新开始。", chat_id=msg_chat_id)
+                            continue
+                        if text == "/start" or text == "/help":
+                            await self._send_telegram_message(
+                                "直接跟我聊天就好，我会记住你说的话。发送 /clear 可以清空对话记忆。",
+                                chat_id=msg_chat_id,
+                            )
+                            continue
+                        continue
+                    asyncio.create_task(self._handle_telegram_chat(msg_chat_id, text))
+            except asyncio.CancelledError:
+                logger.info("Telegram bot loop cancelled")
+                break
+            except asyncio.TimeoutError:
+                logger.debug("Telegram getUpdates timed out, retrying")
+            except Exception as exc:
+                logger.warning("Telegram bot loop error | error=%s", exc)
+                await asyncio.sleep(5)
+
+    async def _handle_telegram_chat(self, chat_id: str, user_text: str) -> None:
+        """Process a Telegram message: inject memories, call LLM, send reply."""
+        try:
+            session_id = f"telegram_{chat_id}"
+            history = self._telegram_chat_histories.setdefault(chat_id, [])
+            history.append({"role": "user", "content": user_text})
+            if len(history) > self._telegram_chat_max_history * 2:
+                history[:] = history[-(self._telegram_chat_max_history * 2):]
+
+            model = self.upstream_default_model or (self.upstream_models[0] if self.upstream_models else "")
+            if not model:
+                logger.warning("Telegram chat skipped | reason=no_model")
+                await self._send_telegram_message("系统还没配置好模型，暂时无法回复。", chat_id=chat_id)
+                return
+
+            messages = list(history)
+            payload = {
+                "model": model,
+                "messages": messages,
+                "stream": False,
+                "temperature": 0.8,
+                "max_tokens": 2048,
+            }
+
+            try:
+                forward_payload, recalled_ids, _debug = await self.prepare_payload(
+                    payload,
+                    session_id,
+                    include_debug=True,
+                    manage_turn_snapshot=False,
+                )
+            except (ValueError, RuntimeError) as exc:
+                logger.warning("Telegram chat prepare failed | error=%s", exc)
+                await self._send_telegram_message("记忆系统出了点问题，稍等一下再试。", chat_id=chat_id)
+                return
+
+            upstream_response = await self._forward_upstream(forward_payload)
+            if upstream_response.status_code >= 400:
+                logger.warning(
+                    "Telegram chat upstream failed | status=%s body=%s",
+                    upstream_response.status_code,
+                    upstream_response.text[:300],
+                )
+                await self._send_telegram_message("上游服务暂时不可用，稍后再试。", chat_id=chat_id)
+                return
+
+            assistant_message = self._extract_assistant_message_from_response(upstream_response)
+            reply_text = self._coerce_message_text(
+                assistant_message.get("content") if isinstance(assistant_message, dict) else ""
+            ).strip()
+            if not reply_text:
+                reply_text = "……（我好像走神了）"
+
+            history.append({"role": "assistant", "content": reply_text})
+            if len(history) > self._telegram_chat_max_history * 2:
+                history[:] = history[-(self._telegram_chat_max_history * 2):]
+
+            await self._send_telegram_message(reply_text, chat_id=chat_id)
+
+            try:
+                self._record_conversation_turn(
+                    session_id=session_id,
+                    round_id=self.state_store.get_current_round(session_id) + 1,
+                    user_message=user_text,
+                    assistant_message=assistant_message,
+                    model=model,
+                    client="telegram",
+                    route="/telegram/chat",
+                )
+            except Exception as exc:
+                logger.warning("Telegram conversation turn record failed | error=%s", exc)
+
+            try:
+                await self._update_persona_after_assistant_message(
+                    session_id,
+                    user_text,
+                    assistant_message,
+                    recalled_ids or [],
+                )
+            except Exception as exc:
+                logger.warning("Telegram persona update failed | error=%s", exc)
+
+            logger.info(
+                "Telegram chat completed | chat_id=%s session=%s reply_chars=%s",
+                chat_id, session_id, len(reply_text),
+            )
+
+        except Exception as exc:
+            logger.warning("Telegram chat handler failed | error=%s", exc)
+            try:
+                await self._send_telegram_message("出了点问题，稍后再试。", chat_id=chat_id)
+            except Exception:
+                pass
 
     @staticmethod
     def _assistant_message_has_output(assistant_message: dict[str, Any] | None) -> bool:
@@ -21936,6 +22139,8 @@ def create_gateway_app(
         await service.warm_recall_runtime()
         if service.heartbeat_enabled:
             service._start_heartbeat()
+        if service.telegram_bot_enabled:
+            service._start_telegram_bot()
         yield
         await service.close()
 
