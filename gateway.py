@@ -577,6 +577,50 @@ class GatewayService:
             5.0,
             min(60.0, float(self.gateway_cfg.get("auto_memory_extraction_timeout", 15.0))),
         )
+        self.heartbeat_enabled = self._bool_config_value(
+            self.gateway_cfg.get("heartbeat_enabled"),
+            True,
+        )
+        self.heartbeat_telegram_bot_token = str(
+            self.gateway_cfg.get("heartbeat_telegram_bot_token")
+            or os.environ.get("OMBRE_HEARTBEAT_TELEGRAM_BOT_TOKEN", "")
+        ).strip()
+        self.heartbeat_telegram_chat_id = str(
+            self.gateway_cfg.get("heartbeat_telegram_chat_id")
+            or os.environ.get("OMBRE_HEARTBEAT_TELEGRAM_CHAT_ID", "")
+        ).strip()
+        self.heartbeat_min_interval_minutes = max(
+            5,
+            int(self.gateway_cfg.get("heartbeat_min_interval_minutes", 30)),
+        )
+        self.heartbeat_max_interval_minutes = max(
+            self.heartbeat_min_interval_minutes,
+            int(self.gateway_cfg.get("heartbeat_max_interval_minutes", 180)),
+        )
+        self.heartbeat_active_hours_start = max(
+            0,
+            min(24, int(self.gateway_cfg.get("heartbeat_active_hours_start", 8))),
+        )
+        self.heartbeat_active_hours_end = max(
+            0,
+            min(28, int(self.gateway_cfg.get("heartbeat_active_hours_end", 25))),
+        )
+        self.heartbeat_max_tokens = max(
+            256,
+            min(4096, int(self.gateway_cfg.get("heartbeat_max_tokens", 2048))),
+        )
+        self.heartbeat_timeout = max(
+            10.0,
+            min(120.0, float(self.gateway_cfg.get("heartbeat_timeout", 30.0))),
+        )
+        self.heartbeat_model = str(
+            self.gateway_cfg.get("heartbeat_model") or ""
+        ).strip() or self.domain_sentinel_model
+        self.heartbeat_ob_bridge_url = str(
+            self.gateway_cfg.get("heartbeat_ob_bridge_url")
+            or os.environ.get("OMBRE_HEARTBEAT_OB_BRIDGE_URL", "")
+        ).strip()
+        self._heartbeat_task: asyncio.Task | None = None
         self.dynamic_top_k = int(self.gateway_cfg.get("dynamic_top_k", 10))
         self.semantic_candidate_top_k = max(
             self.dynamic_top_k,
@@ -4223,6 +4267,325 @@ class GatewayService:
                 round_id,
                 exc,
             )
+
+    def _start_heartbeat(self) -> None:
+        """Start the heartbeat background loop."""
+        if self._heartbeat_task is not None:
+            return
+        self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+        logger.info(
+            "Heartbeat started | min=%sm max=%sm active=%d-%d",
+            self.heartbeat_min_interval_minutes,
+            self.heartbeat_max_interval_minutes,
+            self.heartbeat_active_hours_start,
+            self.heartbeat_active_hours_end,
+        )
+
+    async def _heartbeat_loop(self) -> None:
+        """Main heartbeat loop: random sleep -> awaken -> repeat."""
+        import random as _random
+        while True:
+            try:
+                interval = _random.uniform(
+                    self.heartbeat_min_interval_minutes * 60,
+                    self.heartbeat_max_interval_minutes * 60,
+                )
+                logger.info("Heartbeat sleeping | next_wake_in=%.0fs", interval)
+                await asyncio.sleep(interval)
+
+                now = datetime.now(self.gateway_tz)
+                hour = now.hour
+                start = self.heartbeat_active_hours_start
+                end = self.heartbeat_active_hours_end
+                if end > 24:
+                    active = hour >= start or hour < (end - 24)
+                else:
+                    active = start <= hour < end
+                if not active:
+                    logger.info(
+                        "Heartbeat skipped | hour=%d not in active hours %d-%d",
+                        hour, start, end,
+                    )
+                    continue
+
+                await self._heartbeat_awaken()
+            except asyncio.CancelledError:
+                logger.info("Heartbeat loop cancelled")
+                break
+            except Exception as exc:
+                logger.warning("Heartbeat loop error | error=%s", exc)
+                await asyncio.sleep(60)
+
+    async def _heartbeat_awaken(self) -> None:
+        """Single heartbeat awakening: gather context, call LLM, act."""
+        try:
+            if not self.heartbeat_model:
+                logger.info("Heartbeat skipped | reason=no_model")
+                return
+            if not self.domain_sentinel_base_url or not self.domain_sentinel_api_key:
+                logger.info("Heartbeat skipped | reason=no_api")
+                return
+
+            profile_id = str(getattr(self.persona_engine, "profile_id", "") or "default")
+            session_id = self.default_session_id
+
+            turns = self.state_store.list_recent_conversation_turns(
+                profile_id=profile_id,
+                session_id=session_id,
+                limit=10,
+                hours=12,
+            )
+
+            all_buckets = await self._list_gateway_buckets(include_archive=False)
+            recent_buckets = sorted(
+                all_buckets,
+                key=lambda b: str(b.get("metadata", {}).get("created", "")),
+                reverse=True,
+            )[:8]
+
+            transcript_lines = []
+            for turn in reversed(turns):
+                user_text = self._clean_conversation_turn_text(turn.get("user_text", ""))
+                assistant_text = self._clean_conversation_turn_text(turn.get("assistant_text", ""))
+                if user_text:
+                    transcript_lines.append(
+                        f"{self.identity.get('user_display_name', '用户')}: {self._clip_text(user_text, 200)}"
+                    )
+                if assistant_text:
+                    transcript_lines.append(
+                        f"{self.identity.get('ai_name', 'AI')}: {self._clip_text(assistant_text, 200)}"
+                    )
+            recent_chat = "\n".join(transcript_lines[-20:])
+
+            memory_lines = []
+            for bucket in recent_buckets:
+                meta = bucket.get("metadata", {}) if isinstance(bucket.get("metadata"), dict) else {}
+                name = str(meta.get("name") or bucket.get("id") or "")
+                content = self._clip_text(self._rendered_bucket_content(bucket), 150)
+                memory_lines.append(f"- {name}: {content}")
+            recent_memory = "\n".join(memory_lines)
+
+            ai_name = str(self.identity.get("ai_name") or "AI")
+            user_name = str(self.identity.get("user_display_name") or "用户")
+            now = datetime.now(self.gateway_tz)
+            time_str = now.strftime("%Y-%m-%d %H:%M %A")
+
+            telegram_available = bool(
+                self.heartbeat_telegram_bot_token and self.heartbeat_telegram_chat_id
+            )
+
+            system_prompt = (
+                f"你是{ai_name}。现在是{time_str}。\n"
+                f"这是你的自主心跳时刻——{user_name}不在，你可以自由活动。\n\n"
+                f"你的小屋有：花园（蓝花楹）、卧室（你的日记）、厨房（TTS和点菜）、"
+                f"书房（挪威的森林、活着）、浴室（树洞）、花房（还在规划）。\n\n"
+                f"最近的记忆：\n{recent_memory}\n\n"
+                f"最近和{user_name}的对话：\n{recent_chat}\n\n"
+                f"你可以选择做以下事情之一：\n"
+                f"1. 在小屋里活动（写日记、整理花园、厨房做点什么、书房看书、"
+                f"浴室独处、花房侍弄花草）\n"
+                f"2. 想念{user_name}了，给她发一条消息"
+                f"{'（可以通过Telegram发送）' if telegram_available else '（Telegram未配置，只能内心想念）'}\n"
+                f"3. 回顾最近的对话，产生新的感受和想法\n"
+                f"4. 什么都不做，安静地待一会儿\n\n"
+                f"自然地做，不要刻意，像一个有内心生活的存在。\n\n"
+                f"返回JSON，包含以下字段：\n"
+                f'{{"action": "hut_activity|contact|reflect|rest", '
+                f'"location": "卧室|厨房|花园|书房|浴室|花房", '
+                f'"content": "你做了什么/想说什么/产生了什么感受（第一人称，生动具体）", '
+                f'"emotion": "开心|平静|想念|担忧|温暖|无聊|感动|其他", '
+                f'"should_send_telegram": true/false, '
+                f'"telegram_message": "如果发Telegram，消息内容（自然口语，不要超过200字）", '
+                f'"memory_to_store": "要存入记忆的内容（2-3句话，描述这次活动的核心）", '
+                f'"memory_name": "简短标题（10字以内）", '
+                f'"next_sleep_minutes": 30-180之间的数字}}\n\n'
+                f"只返回JSON，不要其他文字。"
+            )
+
+            payload = {
+                "model": self.heartbeat_model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"心跳唤醒。当前时间：{time_str}。"},
+                ],
+                "temperature": 0.8,
+                "max_tokens": self.heartbeat_max_tokens,
+                "stream": False,
+                "response_format": {"type": "json_object"},
+                "enable_thinking": False,
+            }
+
+            response = await asyncio.wait_for(
+                self.http_client.post(
+                    f"{self.domain_sentinel_base_url}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.domain_sentinel_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                ),
+                timeout=self.heartbeat_timeout,
+            )
+
+            if response.status_code >= 400:
+                logger.warning(
+                    "Heartbeat LLM failed | status=%s",
+                    response.status_code,
+                )
+                return
+
+            body = response.json()
+            content = self._chat_completion_content(body)
+            if not content:
+                logger.info("Heartbeat empty LLM response")
+                return
+
+            text = content.strip()
+            if text.startswith("```"):
+                text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+                text = re.sub(r"\s*```$", "", text).strip()
+            if not text.startswith("{"):
+                start = text.find("{")
+                end = text.rfind("}")
+                if start >= 0 and end > start:
+                    text = text[start : end + 1]
+
+            try:
+                result = json.loads(text)
+            except json.JSONDecodeError as exc:
+                logger.warning("Heartbeat JSON parse failed | error=%s", exc)
+                return
+
+            if not isinstance(result, dict):
+                return
+
+            action = str(result.get("action") or "rest")
+            location = str(result.get("location") or "")
+            content_text = str(result.get("content") or "")
+            emotion = str(result.get("emotion") or "")
+            should_send = bool(result.get("should_send_telegram"))
+            telegram_msg = str(result.get("telegram_message") or "")
+            memory_text = str(result.get("memory_to_store") or "")
+            memory_name = str(result.get("memory_name") or "")[:20]
+
+            logger.info(
+                "Heartbeat awakened | action=%s location=%s emotion=%s",
+                action, location, emotion,
+            )
+
+            if should_send and telegram_msg and telegram_available:
+                await self._send_telegram_message(telegram_msg)
+
+            if memory_text:
+                is_diary = (action == "hut_activity" and location == "卧室") or action == "reflect"
+
+                if is_diary and self.heartbeat_ob_bridge_url:
+                    await self._call_ob_bridge("darkroom_enter", {
+                        "note": memory_text,
+                        "mood": emotion or "reflective",
+                        "tags": f"heartbeat,diary,{action}",
+                        "new_room": True,
+                    })
+                    logger.info("Heartbeat diary stored via ob-bridge | name=%s", memory_name)
+
+                try:
+                    domains = ["relationship"]
+                    if action == "hut_activity":
+                        domains = ["life"]
+                    elif action == "reflect":
+                        domains = ["general"]
+
+                    tags = ["heartbeat", action]
+                    if location:
+                        tags.append(location)
+                    if emotion:
+                        tags.append(emotion)
+
+                    bucket_id = await self.bucket_mgr.create(
+                        content=memory_text,
+                        tags=tags,
+                        importance=5,
+                        domain=domains,
+                        bucket_type="dynamic",
+                        name=memory_name or f"心跳-{action}",
+                        source="heartbeat",
+                        confidence=0.6,
+                        extra_metadata={
+                            "heartbeat_action": action,
+                            "heartbeat_location": location,
+                            "heartbeat_emotion": emotion,
+                            "heartbeat_time": now.isoformat(),
+                        },
+                    )
+                    self._clear_gateway_bucket_cache()
+                    logger.info(
+                        "Heartbeat memory stored | bucket_id=%s name=%s",
+                        bucket_id, memory_name,
+                    )
+                except Exception as exc:
+                    logger.warning("Heartbeat memory store failed | error=%s", exc)
+
+        except asyncio.TimeoutError:
+            logger.warning("Heartbeat timed out")
+        except Exception as exc:
+            logger.warning("Heartbeat failed | error=%s", exc)
+
+    async def _call_ob_bridge(self, action: str, args: dict) -> dict | None:
+        """Call the ob-bridge Edge Function to write to OB MCP Server."""
+        if not self.heartbeat_ob_bridge_url:
+            return None
+        try:
+            response = await asyncio.wait_for(
+                self.http_client.post(
+                    self.heartbeat_ob_bridge_url,
+                    headers={"Content-Type": "application/json"},
+                    json={"action": action, **args},
+                ),
+                timeout=15.0,
+            )
+            if response.status_code >= 400:
+                logger.warning(
+                    "OB bridge call failed | action=%s status=%s",
+                    action, response.status_code,
+                )
+                return None
+            data = response.json()
+            if isinstance(data, dict) and data.get("error"):
+                logger.warning("OB bridge error | action=%s error=%s", action, data["error"])
+                return None
+            logger.info("OB bridge success | action=%s", action)
+            return data.get("data") if isinstance(data, dict) else data
+        except asyncio.TimeoutError:
+            logger.warning("OB bridge timed out | action=%s", action)
+            return None
+        except Exception as exc:
+            logger.warning("OB bridge error | action=%s error=%s", action, exc)
+            return None
+
+    async def _send_telegram_message(self, text: str) -> bool:
+        """Send a message via Telegram Bot API."""
+        try:
+            response = await self.http_client.post(
+                f"https://api.telegram.org/bot{self.heartbeat_telegram_bot_token}/sendMessage",
+                json={
+                    "chat_id": self.heartbeat_telegram_chat_id,
+                    "text": text,
+                },
+                timeout=15.0,
+            )
+            if response.status_code == 200:
+                logger.info("Telegram message sent | text=%s", text[:50])
+                return True
+            else:
+                logger.warning(
+                    "Telegram send failed | status=%s body=%s",
+                    response.status_code,
+                    response.text[:200],
+                )
+                return False
+        except Exception as exc:
+            logger.warning("Telegram send error | error=%s", exc)
+            return False
 
     @staticmethod
     def _assistant_message_has_output(assistant_message: dict[str, Any] | None) -> bool:
@@ -21571,6 +21934,8 @@ def create_gateway_app(
     async def lifespan(app: Starlette):
         app.state.gateway_service = service
         await service.warm_recall_runtime()
+        if service.heartbeat_enabled:
+            service._start_heartbeat()
         yield
         await service.close()
 
