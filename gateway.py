@@ -4592,6 +4592,16 @@ class GatewayService:
             logger.warning("OB bridge error | action=%s error=%s", action, exc)
             return None
 
+    @staticmethod
+    def _split_telegram_reply(text: str) -> list[str]:
+        """Split a long reply into chat bubbles by blank lines, like real messaging."""
+        raw = str(text or "").strip()
+        if not raw:
+            return ["……（我好像走神了）"]
+        paragraphs = re.split(r"\n\s*\n", raw)
+        bubbles = [p.strip() for p in paragraphs if p.strip()]
+        return bubbles if bubbles else [raw]
+
     async def _send_telegram_message(self, text: str, chat_id: str | None = None) -> bool:
         """Send a message via Telegram Bot API."""
         target_chat_id = chat_id or self.heartbeat_telegram_chat_id
@@ -4753,7 +4763,8 @@ class GatewayService:
             if len(history) > self._telegram_chat_max_history * 2:
                 history[:] = history[-(self._telegram_chat_max_history * 2):]
 
-            await self._send_telegram_message(reply_text, chat_id=chat_id)
+            for bubble in self._split_telegram_reply(reply_text):
+                await self._send_telegram_message(bubble, chat_id=chat_id)
 
             try:
                 self._record_conversation_turn(
