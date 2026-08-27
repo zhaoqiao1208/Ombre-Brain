@@ -2091,12 +2091,8 @@ class GatewayService:
     100% {{ background-position: 0% 50%; }}
 }}
 @keyframes fadeInUp {{
-    from {{ opacity: 0; transform: translateY(24px); }}
+    from {{ opacity: 0; transform: translateY(20px); }}
     to {{ opacity: 1; transform: translateY(0); }}
-}}
-@keyframes shimmer {{
-    0% {{ background-position: -200% 0; }}
-    100% {{ background-position: 200% 0; }}
 }}
 @keyframes pulse {{
     0%, 100% {{ opacity: 0.6; transform: scale(1); }}
@@ -2104,70 +2100,94 @@ class GatewayService:
 }}
 @keyframes float {{
     0%, 100% {{ transform: translateY(0); }}
-    50% {{ transform: translateY(-6px); }}
+    50% {{ transform: translateY(-5px); }}
 }}
+
+/* ── 亮色主题（默认） ── */
 body {{
-    background: linear-gradient(160deg, #050C12 0%, #063467 40%, #166DA6 65%, #063467 85%, #050C12 100%);
+    background: linear-gradient(135deg, #ECF7E1 0%, #D3E8B7 25%, #CDE7FA 55%, #ECF7E1 75%, #FFF4B6 100%);
     background-size: 300% 300%;
-    animation: drift 25s ease infinite;
-    color: #B5D5DA;
+    animation: drift 20s ease infinite;
+    color: #3a5a28;
     font-family: -apple-system, "Noto Sans SC", "PingFang SC", sans-serif;
     min-height: 100vh;
     padding: 20px;
     position: relative;
     overflow-x: hidden;
+    transition: background 0.6s ease, color 0.6s ease;
 }}
 body::before {{
-    content: "";
+    content: '';
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
     background:
-        radial-gradient(ellipse 600px 400px at 15% 20%, rgba(88, 192, 219, 0.12) 0%, transparent 70%),
-        radial-gradient(ellipse 500px 500px at 85% 75%, rgba(22, 109, 166, 0.10) 0%, transparent 70%),
-        radial-gradient(ellipse 300px 300px at 50% 40%, rgba(181, 213, 218, 0.06) 0%, transparent 60%),
-        radial-gradient(circle 200px at 70% 15%, rgba(88, 192, 219, 0.08) 0%, transparent 50%);
+        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(211, 232, 183, 0.5) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(205, 231, 250, 0.4) 0%, transparent 70%),
+        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(255, 244, 182, 0.3) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
 }}
 body::after {{
-    content: "";
+    content: '';
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
     background-image:
-        radial-gradient(circle 3px at 20% 30%, rgba(181, 213, 218, 0.25) 0%, transparent 100%),
-        radial-gradient(circle 2px at 60% 15%, rgba(181, 213, 218, 0.2) 0%, transparent 100%),
-        radial-gradient(circle 4px at 80% 60%, rgba(88, 192, 219, 0.15) 0%, transparent 100%),
-        radial-gradient(circle 2px at 35% 75%, rgba(181, 213, 218, 0.2) 0%, transparent 100%),
-        radial-gradient(circle 3px at 90% 40%, rgba(88, 192, 219, 0.18) 0%, transparent 100%);
+        radial-gradient(circle 3px at 15% 25%, rgba(211, 232, 183, 0.4) 0%, transparent 100%),
+        radial-gradient(circle 2px at 55% 12%, rgba(205, 231, 250, 0.35) 0%, transparent 100%),
+        radial-gradient(circle 4px at 82% 55%, rgba(255, 244, 182, 0.3) 0%, transparent 100%),
+        radial-gradient(circle 2px at 38% 78%, rgba(211, 232, 183, 0.3) 0%, transparent 100%);
     pointer-events: none;
     z-index: 0;
-    animation: float 8s ease-in-out infinite;
+    animation: float 10s ease-in-out infinite;
 }}
+
+/* ── 暗色主题 ── */
+body.dark {{
+    background: linear-gradient(135deg, #0a1a0a 0%, #142814 25%, #0c1a2a 55%, #0a1a0a 75%, #1a1a0a 100%);
+    color: #b8d4a0;
+}}
+body.dark::before {{
+    background:
+        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(211, 232, 183, 0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(205, 231, 250, 0.05) 0%, transparent 70%),
+        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(255, 244, 182, 0.04) 0%, transparent 60%);
+}}
+body.dark::after {{
+    background-image:
+        radial-gradient(circle 2px at 15% 25%, rgba(211, 232, 183, 0.12) 0%, transparent 100%),
+        radial-gradient(circle 2px at 55% 12%, rgba(205, 231, 250, 0.1) 0%, transparent 100%),
+        radial-gradient(circle 3px at 82% 55%, rgba(255, 244, 182, 0.08) 0%, transparent 100%),
+        radial-gradient(circle 2px at 38% 78%, rgba(211, 232, 183, 0.1) 0%, transparent 100%);
+}}
+
 .container {{ max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }}
+
+/* ── 毛玻璃卡片 ── */
 .glass {{
-    background: rgba(181, 213, 218, 0.08);
-    backdrop-filter: blur(24px) saturate(1.4);
-    -webkit-backdrop-filter: blur(24px) saturate(1.4);
-    border: 1px solid rgba(181, 213, 218, 0.15);
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    border: 1px solid rgba(255, 255, 255, 0.55);
     border-radius: 20px;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
 }}
 .glass::before {{
-    content: "";
+    content: '';
     position: absolute;
     inset: 0;
     border-radius: 20px;
     padding: 1px;
     background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.18) 0%,
-        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.7) 0%,
+        rgba(255, 255, 255, 0.2) 40%,
         rgba(255, 255, 255, 0.0) 50%,
-        rgba(255, 255, 255, 0.03) 60%,
-        rgba(255, 255, 255, 0.12) 100%
+        rgba(255, 255, 255, 0.15) 60%,
+        rgba(255, 255, 255, 0.5) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -2176,48 +2196,106 @@ body::after {{
     pointer-events: none;
 }}
 .glass::after {{
-    content: "";
+    content: '';
     position: absolute;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
+    top: -40%; left: -30%;
+    width: 160%; height: 80%;
     background: radial-gradient(
-        ellipse 40% 30% at 30% 20%,
-        rgba(255, 255, 255, 0.04) 0%,
+        ellipse 50% 40% at 35% 30%,
+        rgba(255, 255, 255, 0.15) 0%,
         transparent 70%
     );
     pointer-events: none;
 }}
+
+body.dark .glass {{
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}}
+body.dark .glass::before {{
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.15) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.0) 50%,
+        rgba(255, 255, 255, 0.02) 60%,
+        rgba(255, 255, 255, 0.1) 100%
+    );
+}}
+body.dark .glass::after {{
+    background: radial-gradient(
+        ellipse 50% 40% at 35% 30%,
+        rgba(255, 255, 255, 0.03) 0%,
+        transparent 70%
+    );
+}}
+
+/* ── Header ── */
 .header {{
     text-align: center;
-    padding: 40px 24px 30px;
+    padding: 40px 24px 28px;
     margin-bottom: 24px;
     animation: fadeInUp 0.8s ease;
 }}
 .header h1 {{
     font-size: 24px;
     font-weight: 700;
-    color: #B5D5DA;
+    color: #4a7a32;
     letter-spacing: 1px;
-    text-shadow: 0 0 30px rgba(88, 192, 219, 0.3);
 }}
-.header p {{ font-size: 13px; color: rgba(181, 213, 218, 0.45); margin-top: 8px; letter-spacing: 0.5px; }}
-.header .stats {{ font-size: 12px; color: rgba(181, 213, 218, 0.3); margin-top: 6px; }}
+body.dark .header h1 {{ color: #a8cc88; }}
+.header p {{ font-size: 13px; color: rgba(58, 90, 40, 0.45); margin-top: 8px; letter-spacing: 0.5px; }}
+body.dark .header p {{ color: rgba(184, 212, 160, 0.4); }}
+.header .stats {{ font-size: 12px; color: rgba(58, 90, 40, 0.3); margin-top: 6px; }}
+body.dark .header .stats {{ color: rgba(184, 212, 160, 0.3); }}
 .heartbeat-icon {{
     display: inline-block;
     margin-bottom: 12px;
     font-size: 28px;
     animation: pulse 3s ease-in-out infinite;
-    filter: drop-shadow(0 0 12px rgba(88, 192, 219, 0.4));
 }}
+
+/* ── 主题切换按钮 ── */
+.theme-toggle {{
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}}
+.theme-toggle:hover {{
+    transform: scale(1.1);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}}
+body.dark .theme-toggle {{
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+}}
+
+/* ── 刷新按钮 ── */
 .refresh {{
     display: inline-block;
     margin-top: 16px;
     padding: 8px 28px;
-    background: rgba(88, 192, 219, 0.1);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: #58C0DB;
-    border: 1px solid rgba(88, 192, 219, 0.2);
+    background: rgba(74, 122, 50, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #4a7a32;
+    border: 1px solid rgba(74, 122, 50, 0.15);
     border-radius: 12px;
     font-size: 13px;
     cursor: pointer;
@@ -2225,110 +2303,17 @@ body::after {{
     transition: all 0.3s ease;
 }}
 .refresh:hover {{
-    background: rgba(88, 192, 219, 0.18);
-    border-color: rgba(88, 192, 219, 0.35);
+    background: rgba(74, 122, 50, 0.15);
+    border-color: rgba(74, 122, 50, 0.25);
     transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(88, 192, 219, 0.15);
 }}
-.card {{
-    background: rgba(181, 213, 218, 0.06);
-    backdrop-filter: blur(20px) saturate(1.3);
-    -webkit-backdrop-filter: blur(20px) saturate(1.3);
-    border: 1px solid rgba(181, 213, 218, 0.1);
-    border-radius: 18px;
-    padding: 20px 22px;
-    margin-bottom: 16px;
-    transition: all 0.35s ease;
-    animation: fadeInUp 0.6s ease both;
-    position: relative;
-    overflow: hidden;
+body.dark .refresh {{
+    color: #a8cc88;
+    background: rgba(168, 204, 136, 0.08);
+    border-color: rgba(168, 204, 136, 0.15);
 }}
-.card::before {{
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 18px;
-    padding: 1px;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.12) 0%,
-        rgba(255, 255, 255, 0.02) 50%,
-        rgba(255, 255, 255, 0.08) 100%
-    );
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-}}
-.card::after {{
-    content: "";
-    position: absolute;
-    top: -30%; right: -20%;
-    width: 60%; height: 60%;
-    background: radial-gradient(
-        ellipse at center,
-        rgba(255, 255, 255, 0.03) 0%,
-        transparent 70%
-    );
-    pointer-events: none;
-}}
-.card:hover {{
-    border-color: rgba(88, 192, 219, 0.25);
-    transform: translateY(-3px);
-    box-shadow:
-        0 12px 40px rgba(5, 12, 18, 0.3),
-        0 0 0 1px rgba(88, 192, 219, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    background: rgba(181, 213, 218, 0.09);
-}}
-.card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; position: relative; z-index: 1; }}
-.time {{ font-size: 12px; color: rgba(181, 213, 218, 0.35); }}
-.action-tag {{
-    font-size: 11px; padding: 3px 10px; border-radius: 8px;
-    background: rgba(88, 192, 219, 0.1);
-    color: #58C0DB;
-    border: 1px solid rgba(88, 192, 219, 0.12);
-}}
-.action-contact .action-tag {{
-    background: rgba(181, 213, 218, 0.1);
-    color: #B5D5DA;
-    border-color: rgba(181, 213, 218, 0.15);
-}}
-.action-reflect .action-tag {{
-    background: rgba(22, 109, 166, 0.15);
-    color: #58C0DB;
-    border-color: rgba(22, 109, 166, 0.2);
-}}
-.action-rest .action-tag {{
-    background: rgba(6, 52, 103, 0.2);
-    color: rgba(181, 213, 218, 0.5);
-    border-color: rgba(6, 52, 103, 0.25);
-}}
-.location {{ font-size: 11px; color: #58C0DB; }}
-.badge {{ font-size: 10px; padding: 2px 8px; border-radius: 6px; }}
-.badge-tg {{
-    background: rgba(88, 192, 219, 0.08);
-    color: #58C0DB;
-    border: 1px solid rgba(88, 192, 219, 0.12);
-}}
-.emotion {{ font-size: 12px; font-weight: 500; position: relative; z-index: 1; }}
-.card-title {{ font-size: 14px; color: #58C0DB; margin-bottom: 8px; font-weight: 500; position: relative; z-index: 1; }}
-.card-content {{ font-size: 14px; line-height: 1.8; color: rgba(181, 213, 218, 0.8); position: relative; z-index: 1; }}
-.tg-msg {{
-    margin-top: 14px; padding: 12px 16px;
-    background: rgba(88, 192, 219, 0.06);
-    border-left: 2px solid rgba(88, 192, 219, 0.3);
-    border-radius: 0 10px 10px 0;
-    font-size: 13px; color: #58C0DB;
-    position: relative; z-index: 1;
-}}
-.empty {{
-    text-align: center; padding: 80px 20px;
-    color: rgba(181, 213, 218, 0.35); font-size: 15px; line-height: 2;
-    position: relative; z-index: 1;
-}}
-.action-rest .card-content {{ color: rgba(181, 213, 218, 0.4); font-style: italic; }}
+
+/* ── Tabs ── */
 .tabs {{
     display: flex;
     gap: 8px;
@@ -2339,31 +2324,202 @@ body::after {{
 .tab {{
     padding: 6px 16px;
     font-size: 12px;
-    color: rgba(181, 213, 218, 0.5);
-    background: rgba(88, 192, 219, 0.06);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(181, 213, 218, 0.1);
+    color: rgba(58, 90, 40, 0.5);
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-family: inherit;
 }}
 .tab:hover {{
-    color: #58C0DB;
-    background: rgba(88, 192, 219, 0.12);
-    border-color: rgba(88, 192, 219, 0.2);
+    color: #4a7a32;
+    background: rgba(211, 232, 183, 0.3);
+    border-color: rgba(211, 232, 183, 0.5);
 }}
 .tab.active {{
-    color: #B5D5DA;
-    background: rgba(88, 192, 219, 0.18);
-    border-color: rgba(88, 192, 219, 0.3);
-    box-shadow: 0 0 12px rgba(88, 192, 219, 0.1);
+    color: #3a5a28;
+    background: rgba(211, 232, 183, 0.4);
+    border-color: rgba(211, 232, 183, 0.6);
+    box-shadow: 0 0 12px rgba(211, 232, 183, 0.2);
 }}
-.card-hide {{ display: none; }}
+body.dark .tab {{
+    color: rgba(184, 212, 160, 0.4);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}}
+body.dark .tab:hover {{
+    color: #a8cc88;
+    background: rgba(168, 204, 136, 0.1);
+    border-color: rgba(168, 204, 136, 0.2);
+}}
+body.dark .tab.active {{
+    color: #b8d4a0;
+    background: rgba(168, 204, 136, 0.15);
+    border-color: rgba(168, 204, 136, 0.25);
+}}
+
+/* ── Card ── */
+.card {{
+    background: rgba(255, 255, 255, 0.32);
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 18px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    transition: all 0.35s ease;
+    animation: fadeInUp 0.6s ease both;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.03);
+}}
+.card::before {{
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.6) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.4) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}}
+.card::after {{
+    content: '';
+    position: absolute;
+    top: -25%; right: -15%;
+    width: 50%; height: 50%;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(255, 255, 255, 0.12) 0%,
+        transparent 70%
+    );
+    pointer-events: none;
+}}
+.card:hover {{
+    border-color: rgba(211, 232, 183, 0.6);
+    transform: translateY(-3px);
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(255, 255, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.4);
+}}
+body.dark .card {{
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+}}
+body.dark .card::before {{
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.02) 50%,
+        rgba(255, 255, 255, 0.08) 100%
+    );
+}}
+body.dark .card:hover {{
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(168, 204, 136, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}}
+
+.card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; position: relative; z-index: 1; }}
+.time {{ font-size: 12px; color: rgba(58, 90, 40, 0.35); }}
+body.dark .time {{ color: rgba(184, 212, 160, 0.3); }}
+.action-tag {{
+    font-size: 11px; padding: 3px 10px; border-radius: 8px;
+    background: rgba(74, 122, 50, 0.08);
+    color: #4a7a32;
+    border: 1px solid rgba(74, 122, 50, 0.12);
+}}
+body.dark .action-tag {{
+    background: rgba(168, 204, 136, 0.08);
+    color: #a8cc88;
+    border-color: rgba(168, 204, 136, 0.12);
+}}
+.action-contact .action-tag {{
+    background: rgba(205, 231, 250, 0.3);
+    color: #3a6a8a;
+    border-color: rgba(205, 231, 250, 0.4);
+}}
+body.dark .action-contact .action-tag {{
+    background: rgba(205, 231, 250, 0.08);
+    color: #7ab8d8;
+    border-color: rgba(205, 231, 250, 0.12);
+}}
+.action-reflect .action-tag {{
+    background: rgba(255, 244, 182, 0.35);
+    color: #7a6a22;
+    border-color: rgba(255, 244, 182, 0.45);
+}}
+body.dark .action-reflect .action-tag {{
+    background: rgba(255, 244, 182, 0.08);
+    color: #d4c478;
+    border-color: rgba(255, 244, 182, 0.12);
+}}
+.action-rest .action-tag {{
+    background: rgba(58, 90, 40, 0.05);
+    color: rgba(58, 90, 40, 0.4);
+    border-color: rgba(58, 90, 40, 0.08);
+}}
+body.dark .action-rest .action-tag {{
+    background: rgba(184, 212, 160, 0.04);
+    color: rgba(184, 212, 160, 0.3);
+}}
+.location {{ font-size: 11px; color: #5a9a42; }}
+body.dark .location {{ color: #88b868; }}
+.badge {{ font-size: 10px; padding: 2px 8px; border-radius: 6px; }}
+.badge-tg {{
+    background: rgba(205, 231, 250, 0.2);
+    color: #3a7a9a;
+    border: 1px solid rgba(205, 231, 250, 0.3);
+}}
+body.dark .badge-tg {{
+    background: rgba(205, 231, 250, 0.06);
+    color: #6aafcf;
+    border-color: rgba(205, 231, 250, 0.1);
+}}
+.emotion {{ font-size: 12px; font-weight: 500; position: relative; z-index: 1; }}
+.card-title {{ font-size: 14px; color: #4a7a32; margin-bottom: 8px; font-weight: 500; position: relative; z-index: 1; }}
+body.dark .card-title {{ color: #a8cc88; }}
+.card-content {{ font-size: 14px; line-height: 1.8; color: rgba(42, 72, 28, 0.75); position: relative; z-index: 1; }}
+body.dark .card-content {{ color: rgba(184, 212, 160, 0.7); }}
+.tg-msg {{
+    margin-top: 14px; padding: 12px 16px;
+    background: rgba(205, 231, 250, 0.15);
+    border-left: 2px solid rgba(58, 122, 154, 0.3);
+    border-radius: 0 10px 10px 0;
+    font-size: 13px; color: #3a7a9a;
+    position: relative; z-index: 1;
+}}
+body.dark .tg-msg {{
+    background: rgba(205, 231, 250, 0.04);
+    border-left-color: rgba(106, 175, 207, 0.2);
+    color: #6aafcf;
+}}
+.empty {{
+    text-align: center; padding: 80px 20px;
+    color: rgba(58, 90, 40, 0.35); font-size: 15px; line-height: 2;
+    position: relative; z-index: 1;
+}}
+body.dark .empty {{ color: rgba(184, 212, 160, 0.3); }}
+.action-rest .card-content {{ color: rgba(58, 90, 40, 0.35); font-style: italic; }}
+body.dark .action-rest .card-content {{ color: rgba(184, 212, 160, 0.3); font-style: italic; }}
 </style>
 </head>
 <body>
+<button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
 <div class="container">
     <div class="header glass">
         <div class="heartbeat-icon">❤️</div>
@@ -2394,6 +2550,23 @@ document.querySelectorAll('.tab').forEach(function(btn) {{
         }});
     }});
 }});
+function toggleTheme() {{
+    document.body.classList.toggle('dark');
+    var btn = document.getElementById('themeToggle');
+    if (document.body.classList.contains('dark')) {{
+        btn.textContent = '☀️';
+        localStorage.setItem('heartbeat-theme', 'dark');
+    }} else {{
+        btn.textContent = '🌙';
+        localStorage.setItem('heartbeat-theme', 'light');
+    }}
+}}
+(function() {{
+    if (localStorage.getItem('heartbeat-theme') === 'dark') {{
+        document.body.classList.add('dark');
+        document.getElementById('themeToggle').textContent = '☀️';
+    }}
+}})();
 </script>
 </body>
 </html>'''
