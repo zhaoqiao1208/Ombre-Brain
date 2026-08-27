@@ -2334,7 +2334,7 @@ body::after {{
 <body>
 <div class="container">
     <div class="header glass">
-        <div class="heartbeat-icon">🫧</div>
+        <div class="heartbeat-icon">❤️</div>
         <h1>{ai_name}的心跳日记</h1>
         <p>这是{ai_name}独自在小屋的生活记录</p>
         <div class="stats">共 {len(entries)} 条记录</div>
