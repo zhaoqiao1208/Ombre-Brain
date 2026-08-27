@@ -35,8 +35,8 @@
   [data-theme="ink"] {
     --bg: #D3E5ED;
     --bg-gradient: linear-gradient(135deg, #D3E5ED 0%, #7E9BA9 50%, #D3E5ED 100%);
-    --surface: rgba(235, 240, 232, 0.35);
-    --surface-solid: #EBF0E8;
+    --surface: rgba(249, 252, 255, 0.6);
+    --surface-solid: #F9FCFF;
     --border: rgba(126, 155, 169, 0.2);
     --border-strong: rgba(126, 155, 169, 0.35);
     --text: #1A2A35;
@@ -195,15 +195,14 @@
   .search-bar input::placeholder { color: var(--text-light); }
 
   .tabs {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
     padding: 12px 24px;
     gap: 8px;
     background: transparent;
-    justify-content: flex-start;
   }
   .tab {
-    padding: 8px 18px;
+    padding: 10px 8px;
     font-size: 12px;
     font-weight: 600;
     color: var(--text);
@@ -219,6 +218,7 @@
     overflow: hidden;
     box-shadow: 0 2px 8px var(--shadow-dark-subtle),
                 inset 0 1px 0 var(--glass-highlight);
+    text-align: center;
   }
   .tab::before {
     content: '';
@@ -2838,8 +2838,8 @@
     }
     .search-bar { margin-left: 0; width: 100%; }
     .search-bar input { width: 100%; }
-    .tabs { padding: 8px 12px; gap: 6px; }
-    .tab { padding: 6px 12px; font-size: 11px; }
+    .tabs { padding: 8px 12px; gap: 6px; grid-template-columns: repeat(3, 1fr); }
+    .tab { padding: 8px 6px; font-size: 11px; }
     .content { padding: 20px 16px; }
     .bucket-row {
       grid-template-columns: 28px 1fr 60px;
