@@ -2085,74 +2085,167 @@ class GatewayService:
 <title>{ai_name}的心跳日记</title>
 <style>
 * {{ margin:0; padding:0; box-sizing:border-box; }}
+@keyframes gradientShift {{
+    0% {{ background-position: 0% 50%; }}
+    50% {{ background-position: 100% 50%; }}
+    100% {{ background-position: 0% 50%; }}
+}}
+@keyframes fadeInUp {{
+    from {{ opacity: 0; transform: translateY(20px); }}
+    to {{ opacity: 1; transform: translateY(0); }}
+}}
+@keyframes pulse {{
+    0%, 100% {{ opacity: 0.6; transform: scale(1); }}
+    50% {{ opacity: 1; transform: scale(1.05); }}
+}}
 body {{
-    background: #1a1b26;
-    color: #c0caf5;
+    background: linear-gradient(135deg, #0f0c29, #1a1040, #24243e, #1a1040, #0f0c29);
+    background-size: 400% 400%;
+    animation: gradientShift 20s ease infinite;
+    color: #e0e6f0;
     font-family: -apple-system, "Noto Sans SC", "PingFang SC", sans-serif;
     min-height: 100vh;
     padding: 20px;
+    position: relative;
 }}
-.container {{ max-width: 720px; margin: 0 auto; }}
+body::before {{
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background:
+        radial-gradient(circle at 20% 30%, rgba(123, 97, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(99, 179, 237, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(159, 122, 234, 0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}}
+.container {{ max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }}
 .header {{
     text-align: center;
-    padding: 30px 0 20px;
-    border-bottom: 1px solid #33354a;
-    margin-bottom: 24px;
+    padding: 40px 20px 28px;
+    margin-bottom: 28px;
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    animation: fadeInUp 0.8s ease;
 }}
-.header h1 {{ font-size: 22px; font-weight: 600; color: #7aa2f7; }}
-.header p {{ font-size: 13px; color: #565f89; margin-top: 6px; }}
-.header .stats {{ font-size: 12px; color: #565f89; margin-top: 8px; }}
+.header h1 {{
+    font-size: 24px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #a78bfa, #7dd3fc, #c4b5fd);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 6s ease infinite;
+}}
+.header p {{ font-size: 13px; color: rgba(192, 202, 245, 0.5); margin-top: 8px; letter-spacing: 0.5px; }}
+.header .stats {{ font-size: 12px; color: rgba(192, 202, 245, 0.35); margin-top: 6px; }}
+.heartbeat-icon {{
+    display: inline-block;
+    margin-bottom: 12px;
+    font-size: 28px;
+    animation: pulse 2s ease-in-out infinite;
+}}
 .refresh {{
     display: inline-block;
-    margin-top: 12px;
-    padding: 6px 18px;
-    background: #241f2b;
-    color: #bb9af7;
-    border: 1px solid #36354a;
-    border-radius: 8px;
+    margin-top: 14px;
+    padding: 8px 24px;
+    background: rgba(167, 139, 250, 0.12);
+    color: #c4b5fd;
+    border: 1px solid rgba(167, 139, 250, 0.2);
+    border-radius: 12px;
     font-size: 13px;
     cursor: pointer;
     text-decoration: none;
-    transition: background 0.2s;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }}
-.refresh:hover {{ background: #2a2438; }}
+.refresh:hover {{
+    background: rgba(167, 139, 250, 0.22);
+    border-color: rgba(167, 139, 250, 0.35);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(167, 139, 250, 0.15);
+}}
 .card {{
-    background: #1f2335;
-    border: 1px solid #2a2e44;
-    border-radius: 12px;
-    padding: 18px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 20px 22px;
     margin-bottom: 16px;
-    transition: border-color 0.2s;
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.6s ease both;
 }}
-.card:hover {{ border-color: #3b4261; }}
-.card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }}
-.time {{ font-size: 12px; color: #565f89; }}
+.card:hover {{
+    border-color: rgba(167, 139, 250, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(167, 139, 250, 0.1);
+    background: rgba(255, 255, 255, 0.07);
+}}
+.card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }}
+.time {{ font-size: 12px; color: rgba(192, 202, 245, 0.4); }}
 .action-tag {{
-    font-size: 11px; padding: 2px 8px; border-radius: 6px;
-    background: #2a2e44; color: #7aa2f7;
+    font-size: 11px; padding: 3px 10px; border-radius: 8px;
+    background: rgba(122, 162, 247, 0.12);
+    color: #93c5fd;
+    border: 1px solid rgba(122, 162, 247, 0.15);
 }}
-.action-contact .action-tag {{ background: #2b2130; color: #e0af68; }}
-.location {{ font-size: 11px; color: #9d7cd8; }}
-.badge {{ font-size: 10px; padding: 2px 7px; border-radius: 5px; }}
-.badge-tg {{ background: #1b2c3a; color: #7dcfff; }}
+.action-contact .action-tag {{
+    background: rgba(224, 175, 104, 0.1);
+    color: #fbbf24;
+    border-color: rgba(224, 175, 104, 0.15);
+}}
+.action-reflect .action-tag {{
+    background: rgba(167, 139, 250, 0.1);
+    color: #c4b5fd;
+    border-color: rgba(167, 139, 250, 0.15);
+}}
+.action-rest .action-tag {{
+    background: rgba(100, 116, 139, 0.1);
+    color: #94a3b8;
+    border-color: rgba(100, 116, 139, 0.15);
+}}
+.location {{ font-size: 11px; color: #a78bfa; }}
+.badge {{ font-size: 10px; padding: 2px 8px; border-radius: 6px; }}
+.badge-tg {{
+    background: rgba(125, 207, 255, 0.1);
+    color: #7dd3fc;
+    border: 1px solid rgba(125, 207, 255, 0.15);
+}}
 .emotion {{ font-size: 12px; font-weight: 500; }}
-.card-title {{ font-size: 14px; color: #9d7cd8; margin-bottom: 6px; }}
-.card-content {{ font-size: 14px; line-height: 1.7; color: #c0caf5; }}
+.card-title {{ font-size: 14px; color: #c4b5fd; margin-bottom: 8px; font-weight: 500; }}
+.card-content {{ font-size: 14px; line-height: 1.8; color: rgba(224, 230, 240, 0.85); }}
 .tg-msg {{
-    margin-top: 12px; padding: 10px 14px;
-    background: #1a2b3a; border-left: 3px solid #7dcfff;
-    border-radius: 4px; font-size: 13px; color: #7dcfff;
+    margin-top: 14px; padding: 12px 16px;
+    background: rgba(125, 207, 255, 0.06);
+    border-left: 3px solid rgba(125, 207, 255, 0.4);
+    border-radius: 0 8px 8px 0;
+    font-size: 13px; color: #7dd3fc;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }}
 .empty {{
-    text-align: center; padding: 60px 20px;
-    color: #565f89; font-size: 15px; line-height: 1.8;
+    text-align: center; padding: 80px 20px;
+    color: rgba(192, 202, 245, 0.4); font-size: 15px; line-height: 2;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
 }}
-.action-rest .card-content {{ color: #565f89; font-style: italic; }}
+.action-rest .card-content {{ color: rgba(148, 163, 184, 0.6); font-style: italic; }}
 </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
+        <div class="heartbeat-icon">💜</div>
         <h1>{ai_name}的心跳日记</h1>
         <p>这是{ai_name}独自在小屋的生活记录</p>
         <div class="stats">共 {len(entries)} 条记录</div>
