@@ -2186,30 +2186,27 @@ body.dark::after {{
 
 /* ── 毛玻璃卡片 ── */
 .glass {{
-    background: rgba(255, 255, 255, 0.28);
-    backdrop-filter: blur(32px) saturate(1.8) brightness(1.05);
-    -webkit-backdrop-filter: blur(32px) saturate(1.8) brightness(1.05);
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
     border: 1px solid rgba(255, 255, 255, 0.6);
     border-radius: 20px;
     position: relative;
     overflow: hidden;
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.06),
-        inset 0 1px 1px rgba(255, 255, 255, 0.6),
-        inset 0 -1px 2px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
 .glass::before {{
     content: '';
     position: absolute;
     inset: 0;
     border-radius: 20px;
-    padding: 1.5px;
+    padding: 1.5px;    padding: 1px;
     background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.85) 0%,
-        rgba(255, 255, 255, 0.3) 30%,
+        rgba(255, 255, 255, 0.7) 0%,
+        rgba(255, 255, 255, 0.2) 40%,
         rgba(255, 255, 255, 0.0) 50%,
-        rgba(255, 255, 255, 0.1) 70%,
-        rgba(255, 255, 255, 0.65) 100%
+        rgba(255, 255, 255, 0.15) 60%,
+        rgba(255, 255, 255, 0.5) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -2237,29 +2234,24 @@ body.dark::after {{
 }}
 
 body.dark .glass {{
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(32px) saturate(1.8) brightness(1.1);
-    -webkit-backdrop-filter: blur(32px) saturate(1.8) brightness(1.1);
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.3),
-        inset 0 1px 1px rgba(255, 255, 255, 0.2),
-        inset 0 -1px 2px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }}
 body.dark .glass::before {{
     background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.25) 0%,
-        rgba(255, 255, 255, 0.05) 30%,
+        rgba(255, 255, 255, 0.15) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
         rgba(255, 255, 255, 0.0) 50%,
-        rgba(255, 255, 255, 0.03) 70%,
-        rgba(255, 255, 255, 0.18) 100%
+        rgba(255, 255, 255, 0.02) 60%,
+        rgba(255, 255, 255, 0.1) 100%
     );
 body.dark .glass::after {{
     background: radial-gradient(
-        ellipse 60% 50% at 30% 25%,
-        rgba(173, 209, 243, 0.12) 0%,
-        transparent 60%
+        ellipse 50% 40% at 35% 30%,
+        rgba(255, 255, 255, 0.03) 0%,
+        transparent 70%
     );
 }}
         ellipse 50% 40% at 35% 30%,
@@ -2352,6 +2344,7 @@ body.dark .refresh {{
 
 /* ── Tabs ── */
 .tabs {{
+    position: relative; z-index: 2;
     display: flex;
     gap: 8px;
     margin-top: 18px;
@@ -2359,6 +2352,7 @@ body.dark .refresh {{
     justify-content: center;
 }}
 .tab {{
+    position: relative; z-index: 2;
     padding: 6px 16px;
     font-size: 14px;
     color: rgba(58, 90, 40, 0.5);
@@ -2400,9 +2394,9 @@ body.dark .tab.active {{
 
 /* ── Card ── */
 .card {{
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(30px) saturate(1.8) brightness(1.05);
-    -webkit-backdrop-filter: blur(30px) saturate(1.8) brightness(1.05);
+    background: rgba(255, 255, 255, 0.32);
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
     border: 1px solid rgba(255, 255, 255, 0.55);
     border-radius: 18px;
     padding: 20px 22px;
@@ -2410,11 +2404,7 @@ body.dark .tab.active {{
     transition: all 0.35s ease;
     animation: fadeInUp 0.6s ease both;
     position: relative;
-    overflow: hidden;
-    box-shadow:
-        0 6px 24px rgba(0, 0, 0, 0.05),
-        inset 0 1px 1px rgba(255, 255, 255, 0.5),
-        inset 0 -1px 2px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.03);
 }}
     overflow: hidden;
 .card::before {{
@@ -2446,15 +2436,14 @@ body.dark .tab.active {{
 .card:hover {{
     border-color: rgba(211, 232, 183, 0.7);
     transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.4);
     box-shadow:
-        0 16px 48px rgba(0, 0, 0, 0.08),
-        0 0 0 1px rgba(255, 255, 255, 0.4),
-        inset 0 1px 1px rgba(255, 255, 255, 0.6),
-        inset 0 -1px 3px rgba(0, 0, 0, 0.04);
-    background: rgba(255, 255, 255, 0.32);
+        0 12px 40px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(255, 255, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }}
-    backdrop-filter: blur(30px) saturate(1.8) brightness(1.1);
-    -webkit-backdrop-filter: blur(30px) saturate(1.8) brightness(1.1);
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
     border-color: rgba(255, 255, 255, 0.15);
     box-shadow:
         0 6px 24px rgba(0, 0, 0, 0.25),
@@ -2462,33 +2451,25 @@ body.dark .tab.active {{
         inset 0 -1px 2px rgba(0, 0, 0, 0.08);
 }}
 body.dark .card {{
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(30px) saturate(1.8) brightness(1.1);
-    -webkit-backdrop-filter: blur(30px) saturate(1.8) brightness(1.1);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow:
-        0 6px 24px rgba(0, 0, 0, 0.25),
-        inset 0 1px 1px rgba(255, 255, 255, 0.15),
-        inset 0 -1px 2px rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(18px) saturate(1.5);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
 }}
 body.dark .card::before {{
     background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.2) 0%,
-        rgba(255, 255, 255, 0.03) 40%,
-        rgba(255, 255, 255, 0.0) 50%,
-        rgba(255, 255, 255, 0.02) 60%,
-        rgba(255, 255, 255, 0.15) 100%
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.02) 50%,
+        rgba(255, 255, 255, 0.08) 100%
     );
 }}
 body.dark .card:hover {{
     background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(173, 209, 243, 0.3);
+    border-color: rgba(136, 184, 216, 0.2);
     box-shadow:
-        0 16px 48px rgba(0, 0, 0, 0.35),
-        0 0 0 1px rgba(173, 209, 243, 0.15),
-        inset 0 1px 1px rgba(255, 255, 255, 0.2),
-        inset 0 -1px 3px rgba(0, 0, 0, 0.1);
+        0 12px 40px rgba(0, 0, 0, 0.25);
 }}
 .card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; position: relative; z-index: 1; }}
 .time {{ font-size: 13px; color: rgba(45, 80, 24, 0.55); }}
@@ -23022,6 +23003,35 @@ def create_gateway_app(
             Route("/v1/models", models, methods=["GET"]),
             Route("/v1/chat/completions", chat_completions, methods=["POST"]),
             Route("/v1/messages", anthropic_messages, methods=["POST"]),
+            Route("/heartbeat", heartbeat_page, methods=["GET"]),
+            Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
+        ],
+        lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+    return app
+
+
+def main() -> None:
+    config = load_config()
+    setup_logging(config.get("log_level", "INFO"))
+    gateway_cfg = config.get("gateway", {})
+    app = create_gateway_app(config=config)
+    host = gateway_cfg.get("host", "0.0.0.0")
+    port = int(gateway_cfg.get("port", 8010))
+    logger.info("Ombre Brain gateway starting | host=%s port=%s", host, port)
+    uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == "__main__":
+    main()
+        Route("/v1/messages", anthropic_messages, methods=["POST"]),
             Route("/heartbeat", heartbeat_page, methods=["GET"]),
             Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
         ],
