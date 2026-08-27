@@ -2244,11 +2244,11 @@ body.dark .glass::after {{
     color: #4a7a32;
     letter-spacing: 1px;
 }}
-body.dark .header h1 {{ color: #a8cc88; }}
+body.dark .header h1 {{ color: #88b8d8; }}
 .header p {{ font-size: 13px; color: rgba(58, 90, 40, 0.45); margin-top: 8px; letter-spacing: 0.5px; }}
-body.dark .header p {{ color: rgba(184, 212, 160, 0.4); }}
+body.dark .header p {{ color: rgba(184, 200, 216, 0.4); }}
 .header .stats {{ font-size: 12px; color: rgba(58, 90, 40, 0.3); margin-top: 6px; }}
-body.dark .header .stats {{ color: rgba(184, 212, 160, 0.3); }}
+body.dark .header .stats {{ color: rgba(184, 200, 216, 0.3); }}
 .heartbeat-icon {{
     display: inline-block;
     margin-bottom: 12px;
