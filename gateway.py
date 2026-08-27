@@ -2145,8 +2145,8 @@ body::after {{
 
 /* ── 暗色主题 ── */
 body.dark {{
-    background: linear-gradient(135deg, #517888 0%, #7CA96B 50%, #BBD0ED 100%);
-    color: #b8d4a0;
+    background: linear-gradient(135deg, #0c1a2a 0%, #162838 25%, #1a2a3a 55%, #0c1a2a 75%, #101828 100%);
+    color: #b8c8d8;
 }}
 body.dark::before {{
     background:
