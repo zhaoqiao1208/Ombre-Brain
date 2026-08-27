@@ -2145,43 +2145,25 @@ body::after {{
 
 /* ── 暗色主题 ── */
 body.dark {{
-    background: linear-gradient(135deg, #223C5B 0%, #43638C 25%, #7189A5 55%, #223C5B 75%, #ADD1F3 100%);
-    background-size: 300% 300%;
-    animation: drift 20s ease infinite;
-    color: #DDE7F3;
-    font-family: -apple-system, "Noto Sans SC", "PingFang SC", sans-serif;
-    min-height: 100vh;
-    padding: 20px;
-    position: relative;
-    overflow-x: hidden;
-    transition: background 0.6s ease, color 0.6s ease;
+    background: linear-gradient(135deg, #223C5B 0%, #43638C 35%, #7189A5 65%, #ADD1F3 100%);
+    background-size: 200% 200%;
+    color: #e8eaf0;
+    font-weight: 500;
 }}
 body.dark::before {{
-    content: '';
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
     background:
-        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(68, 99, 140, 0.3) 0%, transparent 70%),
-        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(173, 209, 243, 0.2) 0%, transparent 70%),
-        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(221, 231, 243, 0.15) 0%, transparent 60%);
-    pointer-events: none;
-    z-index: 0;
+        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(68, 99, 140, 0.25) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(173, 209, 243, 0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(113, 137, 165, 0.12) 0%, transparent 60%);
 }}
 body.dark::after {{
-    content: '';
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
     background-image:
-        radial-gradient(circle 3px at 15% 25%, rgba(173, 209, 243, 0.25) 0%, transparent 100%),
-        radial-gradient(circle 2px at 55% 12%, rgba(221, 231, 243, 0.2) 0%, transparent 100%),
-        radial-gradient(circle 4px at 82% 55%, rgba(173, 209, 243, 0.18) 0%, transparent 100%),
-        radial-gradient(circle 2px at 38% 78%, rgba(221, 231, 243, 0.2) 0%, transparent 100%);
-    pointer-events: none;
-    z-index: 0;
-    animation: float 10s ease-in-out infinite;
+        radial-gradient(circle 3px at 15% 25%, rgba(173, 209, 243, 0.2) 0%, transparent 100%),
+        radial-gradient(circle 2px at 55% 12%, rgba(173, 209, 243, 0.15) 0%, transparent 100%),
+        radial-gradient(circle 4px at 82% 55%, rgba(221, 231, 243, 0.12) 0%, transparent 100%),
+        radial-gradient(circle 2px at 38% 78%, rgba(173, 209, 243, 0.15) 0%, transparent 100%);
 }}
+
 .container {{ max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }}
 
 /* ── 毛玻璃卡片 ── */
@@ -2189,17 +2171,18 @@ body.dark::after {{
     background: rgba(255, 255, 255, 0.35);
     backdrop-filter: blur(20px) saturate(1.6);
     -webkit-backdrop-filter: blur(20px) saturate(1.6);
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.55);
     border-radius: 20px;
     position: relative;
     overflow: hidden;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}}
 .glass::before {{
     content: '';
     position: absolute;
     inset: 0;
     border-radius: 20px;
-    padding: 1.5px;    padding: 1px;
+    padding: 1px;
     background: linear-gradient(
         135deg,
         rgba(255, 255, 255, 0.7) 0%,
@@ -2217,24 +2200,18 @@ body.dark::after {{
 .glass::after {{
     content: '';
     position: absolute;
-    top: -30%; left: -20%;
-    width: 140%; height: 90%;
+    top: -40%; left: -30%;
+    width: 160%; height: 80%;
     background: radial-gradient(
-        ellipse 60% 50% at 30% 25%,
-        rgba(255, 255, 255, 0.25) 0%,
-        transparent 60%
-    );
-    pointer-events: none;
-}}
-    pointer-events: none;
-}}
+        ellipse 50% 40% at 35% 30%,
+        rgba(255, 255, 255, 0.15) 0%,
         transparent 70%
     );
     pointer-events: none;
 }}
 
 body.dark .glass {{
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.10);
     border-color: rgba(255, 255, 255, 0.15);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }}
@@ -2247,13 +2224,9 @@ body.dark .glass::before {{
         rgba(255, 255, 255, 0.02) 60%,
         rgba(255, 255, 255, 0.1) 100%
     );
+}}
 body.dark .glass::after {{
     background: radial-gradient(
-        ellipse 50% 40% at 35% 30%,
-        rgba(255, 255, 255, 0.03) 0%,
-        transparent 70%
-    );
-}}
         ellipse 50% 40% at 35% 30%,
         rgba(255, 255, 255, 0.03) 0%,
         transparent 70%
@@ -2344,7 +2317,6 @@ body.dark .refresh {{
 
 /* ── Tabs ── */
 .tabs {{
-    position: relative; z-index: 2;
     display: flex;
     gap: 8px;
     margin-top: 18px;
@@ -2352,7 +2324,6 @@ body.dark .refresh {{
     justify-content: center;
 }}
 .tab {{
-    position: relative; z-index: 2;
     padding: 6px 16px;
     font-size: 14px;
     color: rgba(58, 90, 40, 0.5);
@@ -2397,64 +2368,58 @@ body.dark .tab.active {{
     background: rgba(255, 255, 255, 0.32);
     backdrop-filter: blur(18px) saturate(1.5);
     -webkit-backdrop-filter: blur(18px) saturate(1.5);
-    border: 1px solid rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 18px;
     padding: 20px 22px;
     margin-bottom: 16px;
     transition: all 0.35s ease;
     animation: fadeInUp 0.6s ease both;
     position: relative;
+    overflow: hidden;
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.03);
 }}
-    overflow: hidden;
 .card::before {{
     content: '';
     position: absolute;
     inset: 0;
     border-radius: 18px;
-    padding: 1.5px;
+    padding: 1px;
     background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.75) 0%,
-        rgba(255, 255, 255, 0.15) 40%,
-        rgba(255, 255, 255, 0.0) 50%,
-        rgba(255, 255, 255, 0.1) 60%,
-        rgba(255, 255, 255, 0.55) 100%
+        rgba(255, 255, 255, 0.6) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.4) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}}
 .card::after {{
     content: '';
     position: absolute;
-    top: -20%; right: -10%;
-    width: 60%; height: 60%;
+    top: -25%; right: -15%;
+    width: 50%; height: 50%;
     background: radial-gradient(
         ellipse at center,
-        rgba(255, 255, 255, 0.2) 0%,
-        transparent 65%
+        rgba(255, 255, 255, 0.12) 0%,
+        transparent 70%
     );
+    pointer-events: none;
+}}
 .card:hover {{
-    border-color: rgba(211, 232, 183, 0.7);
+    border-color: rgba(211, 232, 183, 0.6);
     transform: translateY(-3px);
-    background: rgba(255, 255, 255, 0.4);
     box-shadow:
         0 12px 40px rgba(0, 0, 0, 0.06),
         0 0 0 1px rgba(255, 255, 255, 0.3),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}}
-    backdrop-filter: blur(18px) saturate(1.5);
-    -webkit-backdrop-filter: blur(18px) saturate(1.5);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow:
-        0 6px 24px rgba(0, 0, 0, 0.25),
-        inset 0 1px 1px rgba(255, 255, 255, 0.15),
-        inset 0 -1px 2px rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.4);
 }}
 body.dark .card {{
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(18px) saturate(1.5);
-    -webkit-backdrop-filter: blur(18px) saturate(1.5);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
 }}
 body.dark .card::before {{
@@ -2466,11 +2431,11 @@ body.dark .card::before {{
     );
 }}
 body.dark .card:hover {{
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     border-color: rgba(136, 184, 216, 0.2);
-    box-shadow:
-        0 12px 40px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
 }}
+
 .card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; position: relative; z-index: 1; }}
 .time {{ font-size: 13px; color: rgba(45, 80, 24, 0.55); }}
 body.dark .time {{ color: rgba(221, 231, 243, 0.5); }}
@@ -23031,32 +22996,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-        Route("/v1/messages", anthropic_messages, methods=["POST"]),
-            Route("/heartbeat", heartbeat_page, methods=["GET"]),
-            Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
-        ],
-        lifespan=lifespan,
-    )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
-        expose_headers=["*"],
-    )
-    return app
 
-
-def main() -> None:
-    config = load_config()
-    setup_logging(config.get("log_level", "INFO"))
-    gateway_cfg = config.get("gateway", {})
-    app = create_gateway_app(config=config)
-    host = gateway_cfg.get("host", "0.0.0.0")
-    port = int(gateway_cfg.get("port", 8010))
-    logger.info("Ombre Brain gateway starting | host=%s port=%s", host, port)
-    uvicorn.run(app, host=host, port=port)
-
-
-if __name__ == "__main__":
-    main()
