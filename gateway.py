@@ -2346,19 +2346,19 @@ body.dark .refresh {{
     box-shadow: 0 0 12px rgba(211, 232, 183, 0.2);
 }}
 body.dark .tab {{
-    color: rgba(184, 212, 160, 0.4);
+    color: rgba(184, 200, 216, 0.4);
     background: rgba(255, 255, 255, 0.04);
     border-color: rgba(255, 255, 255, 0.08);
 }}
 body.dark .tab:hover {{
-    color: #a8cc88;
-    background: rgba(168, 204, 136, 0.1);
-    border-color: rgba(168, 204, 136, 0.2);
+    color: #88b8d8;
+    background: rgba(136, 184, 216, 0.1);
+    border-color: rgba(136, 184, 216, 0.2);
 }}
 body.dark .tab.active {{
-    color: #b8d4a0;
-    background: rgba(168, 204, 136, 0.15);
-    border-color: rgba(168, 204, 136, 0.25);
+    color: #b8c8d8;
+    background: rgba(136, 184, 216, 0.15);
+    border-color: rgba(136, 184, 216, 0.25);
 }}
 
 /* ── Card ── */
