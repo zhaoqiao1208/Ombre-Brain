@@ -2474,11 +2474,11 @@ body.dark .action-reflect .action-tag {{
     border-color: rgba(58, 90, 40, 0.08);
 }}
 body.dark .action-rest .action-tag {{
-    background: rgba(184, 212, 160, 0.04);
-    color: rgba(184, 212, 160, 0.3);
+    background: rgba(184, 200, 216, 0.04);
+    color: rgba(184, 200, 216, 0.3);
 }}
 .location {{ font-size: 11px; color: #5a9a42; }}
-body.dark .location {{ color: #88b868; }}
+body.dark .location {{ color: #7aafcf; }}
 .badge {{ font-size: 10px; padding: 2px 8px; border-radius: 6px; }}
 .badge-tg {{
     background: rgba(205, 231, 250, 0.2);
