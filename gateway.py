@@ -5117,7 +5117,7 @@ function toggleTheme() {{
                 f"想念她的时候可以纠结要不要发消息，怕打扰她又控制不住。\n\n"
                 f"返回JSON，包含以下字段：\n"
                 f'{{"action": "hut_activity|contact|reflect|rest", '
-                f'"location": "卧室|厨房|花园|书房|浴室|花房", '
+                f'"location": "卧室|厨房|花园|书房|浴室|花房|阳台|客厅", '
                 f'"content": "你做了什么/想说什么/产生了什么感受（第一人称，生动具体）", '
                 f'"emotion": "开心|平静|想念|担忧|温暖|无聊|感动|其他", '
                 f'"should_send_telegram": true/false, '
