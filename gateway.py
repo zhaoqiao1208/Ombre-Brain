@@ -2145,51 +2145,71 @@ body::after {{
 
 /* ── 暗色主题 ── */
 body.dark {{
-    background: linear-gradient(135deg, #223C5B 0%, #43638C 35%, #7189A5 65%, #ADD1F3 100%);
-    background-size: 200% 200%;
-    color: #e8eaf0;
-    font-weight: 500;
+    background: linear-gradient(135deg, #223C5B 0%, #43638C 25%, #7189A5 55%, #223C5B 75%, #ADD1F3 100%);
+    background-size: 300% 300%;
+    animation: drift 20s ease infinite;
+    color: #DDE7F3;
+    font-family: -apple-system, "Noto Sans SC", "PingFang SC", sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+    position: relative;
+    overflow-x: hidden;
+    transition: background 0.6s ease, color 0.6s ease;
 }}
 body.dark::before {{
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background:
-        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(68, 99, 140, 0.25) 0%, transparent 70%),
-        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(173, 209, 243, 0.15) 0%, transparent 70%),
-        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(113, 137, 165, 0.12) 0%, transparent 60%);
+        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(68, 99, 140, 0.3) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(173, 209, 243, 0.2) 0%, transparent 70%),
+        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(221, 231, 243, 0.15) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
 }}
 body.dark::after {{
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background-image:
-        radial-gradient(circle 3px at 15% 25%, rgba(173, 209, 243, 0.2) 0%, transparent 100%),
-        radial-gradient(circle 2px at 55% 12%, rgba(173, 209, 243, 0.15) 0%, transparent 100%),
-        radial-gradient(circle 4px at 82% 55%, rgba(221, 231, 243, 0.12) 0%, transparent 100%),
-        radial-gradient(circle 2px at 38% 78%, rgba(173, 209, 243, 0.15) 0%, transparent 100%);
+        radial-gradient(circle 3px at 15% 25%, rgba(173, 209, 243, 0.25) 0%, transparent 100%),
+        radial-gradient(circle 2px at 55% 12%, rgba(221, 231, 243, 0.2) 0%, transparent 100%),
+        radial-gradient(circle 4px at 82% 55%, rgba(173, 209, 243, 0.18) 0%, transparent 100%),
+        radial-gradient(circle 2px at 38% 78%, rgba(221, 231, 243, 0.2) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+    animation: float 10s ease-in-out infinite;
 }}
-
 .container {{ max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }}
 
 /* ── 毛玻璃卡片 ── */
 .glass {{
-    background: rgba(255, 255, 255, 0.35);
-    backdrop-filter: blur(20px) saturate(1.6);
-    -webkit-backdrop-filter: blur(20px) saturate(1.6);
-    border: 1px solid rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.28);
+    backdrop-filter: blur(32px) saturate(1.8) brightness(1.05);
+    -webkit-backdrop-filter: blur(32px) saturate(1.8) brightness(1.05);
+    border: 1px solid rgba(255, 255, 255, 0.6);
     border-radius: 20px;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
-}}
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.06),
+        inset 0 1px 1px rgba(255, 255, 255, 0.6),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.03);
 .glass::before {{
     content: '';
     position: absolute;
     inset: 0;
     border-radius: 20px;
-    padding: 1px;
+    padding: 1.5px;
     background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.7) 0%,
-        rgba(255, 255, 255, 0.2) 40%,
+        rgba(255, 255, 255, 0.85) 0%,
+        rgba(255, 255, 255, 0.3) 30%,
         rgba(255, 255, 255, 0.0) 50%,
-        rgba(255, 255, 255, 0.15) 60%,
-        rgba(255, 255, 255, 0.5) 100%
+        rgba(255, 255, 255, 0.1) 70%,
+        rgba(255, 255, 255, 0.65) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -2200,33 +2220,48 @@ body.dark::after {{
 .glass::after {{
     content: '';
     position: absolute;
-    top: -40%; left: -30%;
-    width: 160%; height: 80%;
+    top: -30%; left: -20%;
+    width: 140%; height: 90%;
     background: radial-gradient(
-        ellipse 50% 40% at 35% 30%,
-        rgba(255, 255, 255, 0.15) 0%,
+        ellipse 60% 50% at 30% 25%,
+        rgba(255, 255, 255, 0.25) 0%,
+        transparent 60%
+    );
+    pointer-events: none;
+}}
+    pointer-events: none;
+}}
         transparent 70%
     );
     pointer-events: none;
 }}
 
 body.dark .glass {{
-    background: rgba(255, 255, 255, 0.10);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(32px) saturate(1.8) brightness(1.1);
+    -webkit-backdrop-filter: blur(32px) saturate(1.8) brightness(1.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 1px rgba(255, 255, 255, 0.2),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.1);
 }}
 body.dark .glass::before {{
     background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.15) 0%,
-        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.25) 0%,
+        rgba(255, 255, 255, 0.05) 30%,
         rgba(255, 255, 255, 0.0) 50%,
-        rgba(255, 255, 255, 0.02) 60%,
-        rgba(255, 255, 255, 0.1) 100%
+        rgba(255, 255, 255, 0.03) 70%,
+        rgba(255, 255, 255, 0.18) 100%
     );
-}}
 body.dark .glass::after {{
     background: radial-gradient(
+        ellipse 60% 50% at 30% 25%,
+        rgba(173, 209, 243, 0.12) 0%,
+        transparent 60%
+    );
+}}
         ellipse 50% 40% at 35% 30%,
         rgba(255, 255, 255, 0.03) 0%,
         transparent 70%
@@ -2365,10 +2400,10 @@ body.dark .tab.active {{
 
 /* ── Card ── */
 .card {{
-    background: rgba(255, 255, 255, 0.32);
-    backdrop-filter: blur(18px) saturate(1.5);
-    -webkit-backdrop-filter: blur(18px) saturate(1.5);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(30px) saturate(1.8) brightness(1.05);
+    -webkit-backdrop-filter: blur(30px) saturate(1.8) brightness(1.05);
+    border: 1px solid rgba(255, 255, 255, 0.55);
     border-radius: 18px;
     padding: 20px 22px;
     margin-bottom: 16px;
@@ -2376,66 +2411,85 @@ body.dark .tab.active {{
     animation: fadeInUp 0.6s ease both;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.03);
+    box-shadow:
+        0 6px 24px rgba(0, 0, 0, 0.05),
+        inset 0 1px 1px rgba(255, 255, 255, 0.5),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.02);
 }}
+    overflow: hidden;
 .card::before {{
     content: '';
     position: absolute;
     inset: 0;
     border-radius: 18px;
-    padding: 1px;
+    padding: 1.5px;
     background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.6) 0%,
-        rgba(255, 255, 255, 0.1) 50%,
-        rgba(255, 255, 255, 0.4) 100%
+        rgba(255, 255, 255, 0.75) 0%,
+        rgba(255, 255, 255, 0.15) 40%,
+        rgba(255, 255, 255, 0.0) 50%,
+        rgba(255, 255, 255, 0.1) 60%,
+        rgba(255, 255, 255, 0.55) 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-}}
 .card::after {{
     content: '';
     position: absolute;
-    top: -25%; right: -15%;
-    width: 50%; height: 50%;
+    top: -20%; right: -10%;
+    width: 60%; height: 60%;
     background: radial-gradient(
         ellipse at center,
-        rgba(255, 255, 255, 0.12) 0%,
-        transparent 70%
+        rgba(255, 255, 255, 0.2) 0%,
+        transparent 65%
     );
-    pointer-events: none;
-}}
 .card:hover {{
-    border-color: rgba(211, 232, 183, 0.6);
+    border-color: rgba(211, 232, 183, 0.7);
     transform: translateY(-3px);
     box-shadow:
-        0 12px 40px rgba(0, 0, 0, 0.06),
-        0 0 0 1px rgba(255, 255, 255, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.4);
+        0 16px 48px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(255, 255, 255, 0.4),
+        inset 0 1px 1px rgba(255, 255, 255, 0.6),
+        inset 0 -1px 3px rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.32);
+}}
+    backdrop-filter: blur(30px) saturate(1.8) brightness(1.1);
+    -webkit-backdrop-filter: blur(30px) saturate(1.8) brightness(1.1);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow:
+        0 6px 24px rgba(0, 0, 0, 0.25),
+        inset 0 1px 1px rgba(255, 255, 255, 0.15),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.08);
 }}
 body.dark .card {{
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(30px) saturate(1.8) brightness(1.1);
+    -webkit-backdrop-filter: blur(30px) saturate(1.8) brightness(1.1);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow:
+        0 6px 24px rgba(0, 0, 0, 0.25),
+        inset 0 1px 1px rgba(255, 255, 255, 0.15),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.08);
 }}
 body.dark .card::before {{
     background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.1) 0%,
-        rgba(255, 255, 255, 0.02) 50%,
-        rgba(255, 255, 255, 0.08) 100%
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.0) 50%,
+        rgba(255, 255, 255, 0.02) 60%,
+        rgba(255, 255, 255, 0.15) 100%
     );
 }}
 body.dark .card:hover {{
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(136, 184, 216, 0.2);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(173, 209, 243, 0.3);
+    box-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(173, 209, 243, 0.15),
+        inset 0 1px 1px rgba(255, 255, 255, 0.2),
+        inset 0 -1px 3px rgba(0, 0, 0, 0.1);
 }}
-
 .card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; position: relative; z-index: 1; }}
 .time {{ font-size: 13px; color: rgba(45, 80, 24, 0.55); }}
 body.dark .time {{ color: rgba(221, 231, 243, 0.5); }}
@@ -22996,4 +23050,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
