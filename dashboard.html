@@ -3416,6 +3416,31 @@
   <div class="reflection-shell">
     <div class="reflection-toolbar">
       <div class="reflection-title">
+        <h2>自动记忆提取</h2>
+        <p>每隔N轮对话自动提取记忆写入OB。可在下方控制开关和参数。</p>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+      <label style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--surface);border-radius:14px;border:1px solid var(--border);font-size:13px;">
+        <span style="font-weight:600;">自动提取</span>
+        <input type="checkbox" id="auto-extract-enabled" onchange="saveAutoMemoryConfig()" style="margin-left:auto;width:18px;height:18px;cursor:pointer;">
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--surface);border-radius:14px;border:1px solid var(--border);font-size:13px;">
+        <span style="font-weight:600;">间隔轮数</span>
+        <input type="number" id="auto-extract-interval" min="3" max="100" value="10" onchange="saveAutoMemoryConfig()" style="margin-left:auto;width:70px;padding:4px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface-solid);color:var(--text);">
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--surface);border-radius:14px;border:1px solid var(--border);font-size:13px;">
+        <span style="font-weight:600;">最大tokens</span>
+        <input type="number" id="auto-extract-max-tokens" min="256" max="2048" value="1024" onchange="saveAutoMemoryConfig()" style="margin-left:auto;width:70px;padding:4px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface-solid);color:var(--text);">
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--surface);border-radius:14px;border:1px solid var(--border);font-size:13px;">
+        <span style="font-weight:600;">超时(秒)</span>
+        <input type="number" id="auto-extract-timeout" min="5" max="60" value="15" onchange="saveAutoMemoryConfig()" style="margin-left:auto;width:70px;padding:4px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface-solid);color:var(--text);">
+      </label>
+    </div>
+    <div id="auto-extract-status" style="padding:10px 16px;background:var(--surface);border-radius:10px;border:1px solid var(--border);font-size:12px;color:var(--text-dim);margin-bottom:20px;"></div>
+    <div class="reflection-toolbar">
+      <div class="reflection-title">
         <h2>记忆候选</h2>
         <p>每天本地零点后从原文保险箱里挑长期记忆；默认自动写入，review 模式下在这里确认。</p>
       </div>
@@ -8654,8 +8679,45 @@ async function loadConfig() {
       'Dream API: <strong>' + (cfg.dream.api_ready ? '已设置' : '未设置') + '</strong><br>' +
       'Embedding effective URL: <strong>' + esc(cfg.embedding.effective_base_url || '未设置') + '</strong><br>' +
       'Reranker effective URL: <strong>' + esc(reranker.effective_base_url || '未设置') + '</strong>';
+    var gw = cfg.gateway || {};
+    var aeEl = document.getElementById('auto-extract-enabled');
+    if (aeEl) aeEl.checked = !!gw.auto_memory_extraction_enabled;
+    var aiEl = document.getElementById('auto-extract-interval');
+    if (aiEl) aiEl.value = gw.auto_memory_extraction_interval || 10;
+    var amEl = document.getElementById('auto-extract-max-tokens');
+    if (amEl) amEl.value = gw.auto_memory_extraction_max_tokens || 1024;
+    var atEl = document.getElementById('auto-extract-timeout');
+    if (atEl) atEl.value = gw.auto_memory_extraction_timeout || 15;
+    var asEl = document.getElementById('auto-extract-status');
+    if (asEl) asEl.textContent = gw.auto_memory_extraction_enabled ? '状态：已启用，每 ' + (gw.auto_memory_extraction_interval || 10) + ' 轮自动提取' : '状态：未启用';
   } catch (e) {
     setConfigStatus('<span style="color:var(--negative)">加载失败: ' + esc(e.message) + '</span>');
+  }
+}
+
+async function saveAutoMemoryConfig() {
+  var payload = {
+    gateway: {
+      auto_memory_extraction_enabled: document.getElementById('auto-extract-enabled').checked,
+      auto_memory_extraction_interval: parseInt(document.getElementById('auto-extract-interval').value, 10) || 10,
+      auto_memory_extraction_max_tokens: parseInt(document.getElementById('auto-extract-max-tokens').value, 10) || 1024,
+      auto_memory_extraction_timeout: parseFloat(document.getElementById('auto-extract-timeout').value) || 15
+    }
+  };
+  try {
+    var res = await authFetch(BASE + '/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res || !res.ok) throw new Error('保存失败');
+    var data = await res.json();
+    var gw = data.gateway || {};
+    var el = document.getElementById('auto-extract-status');
+    if (el) el.textContent = gw.auto_memory_extraction_enabled ? '状态：已启用，每 ' + (gw.auto_memory_extraction_interval || 10) + ' 轮自动提取 · 已保存' : '状态：未启用 · 已保存';
+  } catch (e) {
+    var el = document.getElementById('auto-extract-status');
+    if (el) el.textContent = '保存失败: ' + e.message;
   }
 }
 

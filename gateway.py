@@ -1124,6 +1124,10 @@ class GatewayService:
             "telegram_system_prompt": self.telegram_system_prompt,
             "heartbeat_inject_enabled": self.heartbeat_inject_enabled,
             "heartbeat_inject_cooldown_hours": self.heartbeat_inject_cooldown_hours,
+            "auto_memory_extraction_enabled": self.auto_memory_extraction_enabled,
+            "auto_memory_extraction_interval": self.auto_memory_extraction_interval,
+            "auto_memory_extraction_max_tokens": self.auto_memory_extraction_max_tokens,
+            "auto_memory_extraction_timeout": self.auto_memory_extraction_timeout,
             "upstreams": self._gateway_upstreams_config_payload(),
         }
 
@@ -1792,6 +1796,30 @@ class GatewayService:
             self.domain_sentinel_base_url = self._resolve_domain_sentinel_base_url("")
         if not str(self.gateway_cfg.get("domain_sentinel_api_key") or "").strip():
             self.domain_sentinel_api_key = self._resolve_domain_sentinel_api_key("")
+        if "auto_memory_extraction_enabled" in payload:
+            self.auto_memory_extraction_enabled = self._bool_config_value(
+                payload["auto_memory_extraction_enabled"], False,
+            )
+            self.gateway_cfg["auto_memory_extraction_enabled"] = self.auto_memory_extraction_enabled
+            updated.append("gateway.auto_memory_extraction_enabled")
+        if "auto_memory_extraction_interval" in payload:
+            self.auto_memory_extraction_interval = max(
+                3, min(100, int(payload["auto_memory_extraction_interval"])),
+            )
+            self.gateway_cfg["auto_memory_extraction_interval"] = self.auto_memory_extraction_interval
+            updated.append("gateway.auto_memory_extraction_interval")
+        if "auto_memory_extraction_max_tokens" in payload:
+            self.auto_memory_extraction_max_tokens = max(
+                256, min(2048, int(payload["auto_memory_extraction_max_tokens"])),
+            )
+            self.gateway_cfg["auto_memory_extraction_max_tokens"] = self.auto_memory_extraction_max_tokens
+            updated.append("gateway.auto_memory_extraction_max_tokens")
+        if "auto_memory_extraction_timeout" in payload:
+            self.auto_memory_extraction_timeout = max(
+                5.0, min(60.0, float(payload["auto_memory_extraction_timeout"])),
+            )
+            self.gateway_cfg["auto_memory_extraction_timeout"] = self.auto_memory_extraction_timeout
+            updated.append("gateway.auto_memory_extraction_timeout")
         return updated
 
     def _apply_reranker_config(self, payload: dict[str, Any]) -> list[str]:
