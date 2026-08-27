@@ -2339,6 +2339,14 @@ body::after {{
         <p>这是{ai_name}独自在小屋的生活记录</p>
         <div class="stats">共 {len(entries)} 条记录</div>
         <a class="refresh" href="/heartbeat?token={token}">刷新</a>
+        <div class="tabs">
+            <button class="tab active" data-filter="all">全部</button>
+            <button class="tab" data-filter="contact">想念</button>
+            <button class="tab" data-filter="reflect">回忆</button>
+            <button class="tab" data-filter="hut_activity">小屋</button>
+            <button class="tab" data-filter="town_activity">小镇</button>
+            <button class="tab" data-filter="rest">安静</button>
+        </div>
     </div>
     {cards_html}
 </div>
