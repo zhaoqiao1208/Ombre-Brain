@@ -2513,9 +2513,9 @@ body.dark .tg-msg {{
     color: rgba(58, 90, 40, 0.35); font-size: 15px; line-height: 2;
     position: relative; z-index: 1;
 }}
-body.dark .empty {{ color: rgba(184, 212, 160, 0.3); }}
+body.dark .empty {{ color: rgba(184, 200, 216, 0.3); }}
 .action-rest .card-content {{ color: rgba(58, 90, 40, 0.35); font-style: italic; }}
-body.dark .action-rest .card-content {{ color: rgba(184, 212, 160, 0.3); font-style: italic; }}
+body.dark .action-rest .card-content {{ color: rgba(184, 200, 216, 0.3); font-style: italic; }}
 </style>
 </head>
 <body>
