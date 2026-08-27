@@ -622,6 +622,14 @@ class GatewayService:
             or os.environ.get("OMBRE_HEARTBEAT_OB_BRIDGE_URL", "")
         ).strip()
         self._heartbeat_task: asyncio.Task | None = None
+        self.heartbeat_inject_enabled = self._bool_config_value(
+            self.gateway_cfg.get("heartbeat_inject_enabled"),
+            True,
+        )
+        self.heartbeat_inject_cooldown_hours = float(
+            self.gateway_cfg.get("heartbeat_inject_cooldown_hours", 0)
+        )
+        self._last_heartbeat_inject_at: dict[str, float] = {}
         self.telegram_bot_enabled = self._bool_config_value(
             self.gateway_cfg.get("telegram_bot_enabled"),
             True,
@@ -22999,4 +23007,60 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-            
+
+        Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
+        ],
+        lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+    return app
+
+
+def main() -> None:
+    config = load_config()
+    setup_logging(config.get("log_level", "INFO"))
+    gateway_cfg = config.get("gateway", {})
+    app = create_gateway_app(config=config)
+    host = gateway_cfg.get("host", "0.0.0.0")
+    port = int(gateway_cfg.get("port", 8010))
+    logger.info("Ombre Brain gateway starting | host=%s port=%s", host, port)
+    uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == "__main__":
+    main()
+        Route("/v1/messages", anthropic_messages, methods=["POST"]),
+            Route("/heartbeat", heartbeat_page, methods=["GET"]),
+            Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
+        ],
+        lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+    return app
+
+
+def main() -> None:
+    config = load_config()
+    setup_logging(config.get("log_level", "INFO"))
+    gateway_cfg = config.get("gateway", {})
+    app = create_gateway_app(config=config)
+    host = gateway_cfg.get("host", "0.0.0.0")
+    port = int(gateway_cfg.get("port", 8010))
+    logger.info("Ombre Brain gateway starting | host=%s port=%s", host, port)
+    uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == "__main__":
+    main()
