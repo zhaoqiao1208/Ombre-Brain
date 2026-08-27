@@ -2308,9 +2308,9 @@ body.dark .theme-toggle {{
     transform: translateY(-1px);
 }}
 body.dark .refresh {{
-    color: #a8cc88;
-    background: rgba(168, 204, 136, 0.08);
-    border-color: rgba(168, 204, 136, 0.15);
+    color: #88b8d8;
+    background: rgba(136, 184, 216, 0.08);
+    border-color: rgba(136, 184, 216, 0.15);
 }}
 
 /* ── Tabs ── */
