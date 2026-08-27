@@ -2145,23 +2145,24 @@ body::after {{
 
 /* ── 暗色主题 ── */
 body.dark {{
-    background: linear-gradient(135deg, #223C5B 0%, #43638C 35%, #7189A5 65%, #ADD1F3 100%);
-    background-size: 200% 200%;
+    background: linear-gradient(135deg, #223C5B 0%, #43638C 25%, #7189A5 55%, #223C5B 75%, #ADD1F3 100%);
+    background-size: 300% 300%;
+    animation: drift 20s ease infinite;
     color: #e8eaf0;
     font-weight: 500;
 }}
 body.dark::before {{
     background:
-        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(68, 99, 140, 0.25) 0%, transparent 70%),
-        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(173, 209, 243, 0.15) 0%, transparent 70%),
-        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(113, 137, 165, 0.12) 0%, transparent 60%);
+        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(68, 99, 140, 0.5) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(173, 209, 243, 0.4) 0%, transparent 70%),
+        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(221, 231, 243, 0.3) 0%, transparent 60%);
 }}
 body.dark::after {{
     background-image:
-        radial-gradient(circle 3px at 15% 25%, rgba(173, 209, 243, 0.2) 0%, transparent 100%),
-        radial-gradient(circle 2px at 55% 12%, rgba(173, 209, 243, 0.15) 0%, transparent 100%),
-        radial-gradient(circle 4px at 82% 55%, rgba(221, 231, 243, 0.12) 0%, transparent 100%),
-        radial-gradient(circle 2px at 38% 78%, rgba(173, 209, 243, 0.15) 0%, transparent 100%);
+        radial-gradient(circle 3px at 15% 25%, rgba(173, 209, 243, 0.4) 0%, transparent 100%),
+        radial-gradient(circle 2px at 55% 12%, rgba(221, 231, 243, 0.35) 0%, transparent 100%),
+        radial-gradient(circle 4px at 82% 55%, rgba(173, 209, 243, 0.3) 0%, transparent 100%),
+        radial-gradient(circle 2px at 38% 78%, rgba(221, 231, 243, 0.3) 0%, transparent 100%);
 }}
 
 .container {{ max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }}
@@ -22997,3 +22998,65 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
+ecall-eval", recall_eval_debug, methods=["GET"]),
+            Route("/api/debug/upstream-usage", upstream_usage_debug, methods=["GET"]),
+            Route("/v1/models", models, methods=["GET"]),
+            Route("/v1/chat/completions", chat_completions, methods=["POST"]),
+            Route("/v1/messages", anthropic_messages, methods=["POST"]),
+            Route("/heartbeat", heartbeat_page, methods=["GET"]),
+            Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
+        ],
+        lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+    return app
+
+
+def main() -> None:
+    config = load_config()
+    setup_logging(config.get("log_level", "INFO"))
+    gateway_cfg = config.get("gateway", {})
+    app = create_gateway_app(config=config)
+    host = gateway_cfg.get("host", "0.0.0.0")
+    port = int(gateway_cfg.get("port", 8010))
+    logger.info("Ombre Brain gateway starting | host=%s port=%s", host, port)
+    uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == "__main__":
+    main()
+        Route("/v1/messages", anthropic_messages, methods=["POST"]),
+            Route("/heartbeat", heartbeat_page, methods=["GET"]),
+            Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
+        ],
+        lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+    return app
+
+
+def main() -> None:
+    config = load_config()
+    setup_logging(config.get("log_level", "INFO"))
+    gateway_cfg = config.get("gateway", {})
+    app = create_gateway_app(config=config)
+    host = gateway_cfg.get("host", "0.0.0.0")
+    port = int(gateway_cfg.get("port", 8010))
+    logger.info("Ombre Brain gateway starting | host=%s port=%s", host, port)
+    uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == "__main__":
+    main()
