@@ -7,24 +7,61 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #FDFCF0;
-    --bg-gradient: radial-gradient(ellipse at 30% 20%, #FDFCF0 0%, #EDE4D3 60%, #E2D1B3 100%);
-    --surface: rgba(255, 255, 255, 0.45);
-    --surface-solid: #F7F2E8;
-    --border: rgba(180, 165, 140, 0.3);
-    --border-strong: rgba(160, 140, 110, 0.5);
-    --text: #3A3530;
-    --text-dim: #8A8070;
-    --text-light: #B0A590;
-    --accent: #2F4F4F;
-    --accent-light: #3D6363;
-    --accent-glow: rgba(47, 79, 79, 0.12);
-    --positive: #4A7C59;
+    --bg: #F5E2E1;
+    --bg-gradient: linear-gradient(135deg, #F5E2E1 0%, #C4919D 50%, #F5E2E1 100%);
+    --surface: rgba(240, 220, 216, 0.35);
+    --surface-solid: #F0DCD8;
+    --border: rgba(196, 145, 157, 0.2);
+    --border-strong: rgba(196, 145, 157, 0.35);
+    --text: #5A3A40;
+    --text-dim: #9A7A80;
+    --text-light: #BEA0A6;
+    --accent: #8A5060;
+    --accent-light: #A06878;
+    --accent-glow: rgba(138, 80, 96, 0.12);
+    --positive: #6A8A6A;
     --negative: #8B4A4A;
     --warning: #9A7B4F;
-    --shadow-light: rgba(255, 252, 240, 0.7);
-    --shadow-dark: rgba(163, 148, 120, 0.4);
-    --shadow-dark-subtle: rgba(163, 148, 120, 0.2);
+    --shadow-light: rgba(245, 226, 225, 0.7);
+    --shadow-dark: rgba(196, 145, 157, 0.25);
+    --shadow-dark-subtle: rgba(196, 145, 157, 0.12);
+    --glass-bg: rgba(240, 220, 216, 0.32);
+    --glass-border: rgba(255, 255, 255, 0.45);
+    --glass-highlight: rgba(255, 255, 255, 0.6);
+    --tab-bg: rgba(230, 185, 198, 0.25);
+    --tab-active-bg: rgba(230, 185, 198, 0.45);
+    --tab-border: rgba(230, 185, 198, 0.3);
+  }
+  [data-theme="ink"] {
+    --bg: #D3E5ED;
+    --bg-gradient: linear-gradient(135deg, #D3E5ED 0%, #7E9BA9 50%, #D3E5ED 100%);
+    --surface: rgba(235, 240, 232, 0.35);
+    --surface-solid: #EBF0E8;
+    --border: rgba(126, 155, 169, 0.2);
+    --border-strong: rgba(126, 155, 169, 0.35);
+    --text: #3A4A50;
+    --text-dim: #7A8A90;
+    --text-light: #A0B0B6;
+    --accent: #4A6A7A;
+    --accent-light: #5A7A8A;
+    --accent-glow: rgba(74, 106, 122, 0.12);
+    --positive: #5A8A6A;
+    --negative: #8B5A5A;
+    --warning: #8A7B5F;
+    --shadow-light: rgba(211, 229, 237, 0.7);
+    --shadow-dark: rgba(126, 155, 169, 0.25);
+    --shadow-dark-subtle: rgba(126, 155, 169, 0.12);
+    --glass-bg: rgba(235, 240, 232, 0.32);
+    --glass-border: rgba(255, 255, 255, 0.45);
+    --glass-highlight: rgba(255, 255, 255, 0.6);
+    --tab-bg: rgba(168, 196, 211, 0.25);
+    --tab-active-bg: rgba(168, 196, 211, 0.45);
+    --tab-border: rgba(168, 196, 211, 0.3);
+  }
+  @keyframes bgDrift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -33,11 +70,14 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-weight: 400;
     background: var(--bg-gradient);
+    background-size: 300% 300%;
     background-attachment: fixed;
+    animation: bgDrift 20s ease infinite;
     color: var(--text);
     min-height: 100vh;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    transition: background 0.6s ease, color 0.4s ease;
   }
 
   .header {
@@ -45,12 +85,15 @@
     display: flex;
     align-items: center;
     gap: 20px;
-    backdrop-filter: blur(12px);
-    background: rgba(253, 252, 240, 0.7);
-    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    background: var(--glass-bg);
+    border-bottom: 1px solid var(--glass-border);
     position: sticky;
     top: 0;
     z-index: 50;
+    box-shadow: 0 2px 16px var(--shadow-dark-subtle);
+    transition: background 0.4s ease;
   }
   .header h1 {
     font-family: 'Cormorant Garamond', serif;
@@ -153,27 +196,60 @@
 
   .tabs {
     display: flex;
-    padding: 0 40px;
-    gap: 4px;
-    background: rgba(253, 252, 240, 0.5);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    padding: 12px 24px;
+    gap: 8px;
+    background: transparent;
+    justify-content: center;
   }
   .tab {
-    padding: 14px 22px;
-    font-size: 13px;
+    padding: 8px 18px;
+    font-size: 12px;
     font-weight: 400;
     color: var(--text-dim);
     cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.25s ease;
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    background: var(--tab-bg);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    transition: all 0.3s ease;
     letter-spacing: 0.3px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px var(--shadow-dark-subtle),
+                inset 0 1px 0 var(--glass-highlight);
   }
-  .tab:hover { color: var(--text); }
+  .tab::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    padding: 1px;
+    background: linear-gradient(135deg,
+      rgba(255,255,255,0.5) 0%,
+      rgba(255,255,255,0.1) 50%,
+      rgba(255,255,255,0.3) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .tab:hover {
+    color: var(--text);
+    background: var(--tab-active-bg);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--shadow-dark-subtle),
+                inset 0 1px 0 var(--glass-highlight);
+  }
   .tab.active {
     color: var(--accent);
-    border-bottom-color: var(--accent);
+    background: var(--tab-active-bg);
+    border-color: var(--tab-border);
     font-weight: 500;
+    box-shadow: 0 4px 16px var(--shadow-dark),
+                inset 0 1px 0 var(--glass-highlight);
   }
 
   .content { padding: 32px 40px; }
@@ -2762,7 +2838,8 @@
     }
     .search-bar { margin-left: 0; width: 100%; }
     .search-bar input { width: 100%; }
-    .tabs { padding: 0 16px; overflow-x: auto; }
+    .tabs { padding: 8px 12px; gap: 6px; }
+    .tab { padding: 6px 12px; font-size: 11px; }
     .content { padding: 20px 16px; }
     .bucket-row {
       grid-template-columns: 28px 1fr 60px;
@@ -2823,6 +2900,7 @@
   <div class="search-bar">
     <input type="search" id="search-input" name="ombre-memory-query" placeholder="搜索记忆…" autocomplete="off" spellcheck="false" />
   </div>
+  <button id="themeToggle" onclick="toggleDashTheme()" title="切换色系" style="background:var(--tab-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--glass-border);color:var(--accent);border-radius:20px;padding:7px 14px;font-size:12px;cursor:pointer;transition:all 0.3s;box-shadow:inset 0 1px 0 var(--glass-highlight);">🎨</button>
   <button onclick="doLogout()" title="退出登录" style="background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:20px;padding:7px 14px;font-size:12px;cursor:pointer;">退出</button>
 </div>
 
@@ -9102,6 +9180,25 @@ function loadDashboardModule(path) {
 }
 
 loadDashboardModule('/dashboard-assets/chat-memory.js?v=20260706-chat-memory-edit');
+</script>
+<script>
+function toggleDashTheme() {
+  var html = document.documentElement;
+  var current = html.getAttribute('data-theme');
+  if (current === 'ink') {
+    html.removeAttribute('data-theme');
+    localStorage.setItem('ob-theme', 'bamboo');
+  } else {
+    html.setAttribute('data-theme', 'ink');
+    localStorage.setItem('ob-theme', 'ink');
+  }
+}
+(function() {
+  var saved = localStorage.getItem('ob-theme');
+  if (saved === 'ink') {
+    document.documentElement.setAttribute('data-theme', 'ink');
+  }
+})();
 </script>
 </body>
 </html>
