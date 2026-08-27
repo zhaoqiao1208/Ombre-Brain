@@ -2145,23 +2145,23 @@ body::after {{
 
 /* ── 暗色主题 ── */
 body.dark {{
-    background: linear-gradient(135deg, #223C5B 0%, #43638C 40%, #7189A5 70%, #ADD1F3 100%);
-    background-size: 300% 300%;
+    background: linear-gradient(135deg, #223C5B 0%, #43638C 35%, #7189A5 65%, #ADD1F3 100%);
+    background-size: 200% 200%;
     color: #e8eaf0;
     font-weight: 500;
 }}
 body.dark::before {{
     background:
-        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(211, 232, 183, 0.06) 0%, transparent 70%),
-        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(205, 231, 250, 0.05) 0%, transparent 70%),
-        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(255, 244, 182, 0.04) 0%, transparent 60%);
+        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(68, 99, 140, 0.25) 0%, transparent 70%),
+        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(173, 209, 243, 0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(113, 137, 165, 0.12) 0%, transparent 60%);
 }}
 body.dark::after {{
     background-image:
-        radial-gradient(circle 2px at 15% 25%, rgba(211, 232, 183, 0.12) 0%, transparent 100%),
-        radial-gradient(circle 2px at 55% 12%, rgba(205, 231, 250, 0.1) 0%, transparent 100%),
-        radial-gradient(circle 3px at 82% 55%, rgba(255, 244, 182, 0.08) 0%, transparent 100%),
-        radial-gradient(circle 2px at 38% 78%, rgba(211, 232, 183, 0.1) 0%, transparent 100%);
+        radial-gradient(circle 3px at 15% 25%, rgba(173, 209, 243, 0.2) 0%, transparent 100%),
+        radial-gradient(circle 2px at 55% 12%, rgba(173, 209, 243, 0.15) 0%, transparent 100%),
+        radial-gradient(circle 4px at 82% 55%, rgba(221, 231, 243, 0.12) 0%, transparent 100%),
+        radial-gradient(circle 2px at 38% 78%, rgba(173, 209, 243, 0.15) 0%, transparent 100%);
 }}
 
 .container {{ max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }}
@@ -2211,8 +2211,8 @@ body.dark::after {{
 }}
 
 body.dark .glass {{
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.15);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }}
 body.dark .glass::before {{
@@ -2241,16 +2241,16 @@ body.dark .glass::after {{
     animation: fadeInUp 0.8s ease;
 }}
 .header h1 {{
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
-    color: #4a7a32;
+    color: #2d5018;
     letter-spacing: 1px;
 }}
-body.dark .header h1 {{ color: #88b8d8; }}
-.header p {{ font-size: 13px; color: rgba(58, 90, 40, 0.45); margin-top: 8px; letter-spacing: 0.5px; }}
-body.dark .header p {{ color: rgba(184, 200, 216, 0.4); }}
-.header .stats {{ font-size: 12px; color: rgba(58, 90, 40, 0.3); margin-top: 6px; }}
-body.dark .header .stats {{ color: rgba(184, 200, 216, 0.3); }}
+body.dark .header h1 {{ color: #E8F0FA; }}
+.header p {{ font-size: 15px; color: rgba(45, 80, 24, 0.65); margin-top: 8px; letter-spacing: 0.5px; }}
+body.dark .header p {{ color: rgba(221, 231, 243, 0.7); }}
+.header .stats {{ font-size: 14px; color: rgba(45, 80, 24, 0.5); margin-top: 6px; }}
+body.dark .header .stats {{ color: rgba(221, 231, 243, 0.55); }}
 .heartbeat-icon {{
     display: inline-block;
     margin-bottom: 12px;
@@ -2299,7 +2299,7 @@ body.dark .theme-toggle {{
     color: #4a7a32;
     border: 1px solid rgba(74, 122, 50, 0.15);
     border-radius: 12px;
-    font-size: 13px;
+    font-size: 15px;
     cursor: pointer;
     text-decoration: none;
     transition: all 0.3s ease;
@@ -2325,7 +2325,7 @@ body.dark .refresh {{
 }}
 .tab {{
     padding: 6px 16px;
-    font-size: 12px;
+    font-size: 14px;
     color: rgba(58, 90, 40, 0.5);
     background: rgba(255, 255, 255, 0.25);
     backdrop-filter: blur(8px);
@@ -2418,8 +2418,8 @@ body.dark .tab.active {{
     background: rgba(255, 255, 255, 0.4);
 }}
 body.dark .card {{
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
 }}
 body.dark .card::before {{
@@ -2437,10 +2437,10 @@ body.dark .card:hover {{
 }}
 
 .card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; position: relative; z-index: 1; }}
-.time {{ font-size: 12px; color: rgba(58, 90, 40, 0.35); }}
-body.dark .time {{ color: rgba(184, 200, 216, 0.3); }}
+.time {{ font-size: 13px; color: rgba(45, 80, 24, 0.55); }}
+body.dark .time {{ color: rgba(221, 231, 243, 0.5); }}
 .action-tag {{
-    font-size: 11px; padding: 3px 10px; border-radius: 8px;
+    font-size: 13px; padding: 3px 10px; border-radius: 8px;
     background: rgba(74, 122, 50, 0.08);
     color: #4a7a32;
     border: 1px solid rgba(74, 122, 50, 0.12);
@@ -2479,9 +2479,9 @@ body.dark .action-rest .action-tag {{
     background: rgba(184, 200, 216, 0.04);
     color: rgba(184, 200, 216, 0.3);
 }}
-.location {{ font-size: 11px; color: #5a9a42; }}
+.location {{ font-size: 13px; color: #5a9a42; }}
 body.dark .location {{ color: #7aafcf; }}
-.badge {{ font-size: 10px; padding: 2px 8px; border-radius: 6px; }}
+.badge {{ font-size: 12px; padding: 2px 8px; border-radius: 6px; }}
 .badge-tg {{
     background: rgba(205, 231, 250, 0.2);
     color: #3a7a9a;
@@ -2492,11 +2492,11 @@ body.dark .badge-tg {{
     color: #6aafcf;
     border-color: rgba(205, 231, 250, 0.1);
 }}
-.emotion {{ font-size: 12px; font-weight: 500; position: relative; z-index: 1; }}
-.card-title {{ font-size: 14px; color: #4a7a32; margin-bottom: 8px; font-weight: 500; position: relative; z-index: 1; }}
-body.dark .card-title {{ color: #88b8d8; }}
-.card-content {{ font-size: 14px; line-height: 1.8; color: rgba(42, 72, 28, 0.75); position: relative; z-index: 1; }}
-body.dark .card-content {{ color: rgba(184, 200, 216, 0.7); }}
+.emotion {{ font-size: 14px; font-weight: 500; position: relative; z-index: 1; }}
+.card-title {{ font-size: 16px; color: #2d5018; margin-bottom: 8px; font-weight: 500; position: relative; z-index: 1; }}
+body.dark .card-title {{ color: #E8F0FA; }}
+.card-content {{ font-size: 16px; line-height: 1.8; color: rgba(30, 55, 20, 0.9); position: relative; z-index: 1; }}
+body.dark .card-content {{ color: rgba(221, 231, 243, 0.9); }}
 .tg-msg {{
     margin-top: 14px; padding: 12px 16px;
     background: rgba(205, 231, 250, 0.15);
@@ -2512,10 +2512,10 @@ body.dark .tg-msg {{
 }}
 .empty {{
     text-align: center; padding: 80px 20px;
-    color: rgba(58, 90, 40, 0.35); font-size: 15px; line-height: 2;
+    color: rgba(45, 80, 24, 0.5); font-size: 17px; line-height: 2;
     position: relative; z-index: 1;
 }}
-body.dark .empty {{ color: rgba(184, 200, 216, 0.3); }}
+body.dark .empty {{ color: rgba(221, 231, 243, 0.5); }}
 .action-rest .card-content {{ color: rgba(58, 90, 40, 0.35); font-style: italic; }}
 body.dark .action-rest .card-content {{ color: rgba(184, 200, 216, 0.3); font-style: italic; }}
 </style>
@@ -22996,3 +22996,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
