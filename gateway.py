@@ -2350,6 +2350,19 @@ body::after {{
     </div>
     {cards_html}
 </div>
+<script>
+document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.getAttribute('data-filter');
+        document.querySelectorAll('.card').forEach(card => {
+            if (filter === 'all') { card.style.display = ''; }
+            else { card.style.display = card.classList.contains('action-' + filter) ? '' : 'none'; }
+        });
+    });
+});
+</script>
 </body>
 </html>'''
         return Response(content=html, media_type="text/html; charset=utf-8")
