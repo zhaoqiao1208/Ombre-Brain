@@ -2145,7 +2145,7 @@ body::after {{
 
 /* ── 暗色主题 ── */
 body.dark {{
-    background: linear-gradient(135deg, #3a60a0 0%, #4d4177 100%);
+    background: linear-gradient(135deg, #223C5B 0%, #43638C 40%, #7189A5 70%, #ADD1F3 100%);
     background-size: 300% 300%;
     color: #e8eaf0;
     font-weight: 500;
