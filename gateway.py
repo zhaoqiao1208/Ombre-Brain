@@ -2383,17 +2383,17 @@ body::after {{
     {cards_html}
 </div>
 <script>
-document.querySelectorAll('.tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+document.querySelectorAll('.tab').forEach(function(btn) {{
+    btn.addEventListener('click', function() {{
+        document.querySelectorAll('.tab').forEach(function(b) {{ b.classList.remove('active'); }});
         btn.classList.add('active');
-        const filter = btn.getAttribute('data-filter');
-        document.querySelectorAll('.card').forEach(card => {
-            if (filter === 'all') { card.style.display = ''; }
-            else { card.style.display = card.classList.contains('action-' + filter) ? '' : 'none'; }
-        });
-    });
-});
+        var filter = btn.getAttribute('data-filter');
+        document.querySelectorAll('.card').forEach(function(card) {{
+            if (filter === 'all') {{ card.style.display = ''; }}
+            else {{ card.style.display = card.classList.contains('action-' + filter) ? '' : 'none'; }}
+        }});
+    }});
+}});
 </script>
 </body>
 </html>'''
