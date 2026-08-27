@@ -1,4 +1,5 @@
 import hashlib
+import asyncio
 import json
 import logging
 import os
@@ -749,40 +750,68 @@ class PersonaStateEngine:
     ) -> tuple[dict | None, str, str | None]:
         if self.mode != "llm" or not self.client:
             return None, "", "persona LLM is not configured"
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": self._post_reply_evaluation_prompt()},
+        messages = [
+            {"role": "system", "content": self._post_reply_evaluation_prompt()},
+            {
+                "role": "user",
+                "content": json.dumps(
                     {
-                        "role": "user",
-                        "content": json.dumps(
-                            {
-                                "current_state": self._snapshot(global_state, session_state, self.fallback_guidance),
-                                "latest_user_message": user_message[:2000],
-                                "assistant_response": assistant_response[:4000],
-                                "recent_conversation_turns": self._recent_conversation_context(
-                                    recent_conversation_turns
-                                ),
-                                "recent_persona_events": self._recent_event_context(session_id, 5),
-                                "recalled_memory_ids": recalled_memory_ids[:20],
-                                "tool_summary": tool_summary[:1200],
-                            },
-                            ensure_ascii=False,
+                        "current_state": self._snapshot(global_state, session_state, self.fallback_guidance),
+                        "latest_user_message": user_message[:2000],
+                        "assistant_response": assistant_response[:4000],
+                        "recent_conversation_turns": self._recent_conversation_context(
+                            recent_conversation_turns
                         ),
+                        "recent_persona_events": self._recent_event_context(session_id, 5),
+                        "recalled_memory_ids": recalled_memory_ids[:20],
+                        "tool_summary": tool_summary[:1200],
                     },
-                ],
-                **self._completion_options(),
-            )
-            raw = response.choices[0].message.content if response.choices else ""
-            parsed = self._parse_json(raw or "")
-            if parsed is None:
-                logger.warning("Persona evaluator returned malformed JSON")
-                return None, raw or "", "persona LLM returned malformed JSON"
-            return self._normalize_evaluation(parsed), raw or "", None
-        except Exception as exc:
-            logger.warning("Persona evaluation failed: %s", exc)
-            return None, "", str(exc)
+                    ensure_ascii=False,
+                ),
+            },
+        ]
+        for attempt in range(2):
+            try:
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    **self._completion_options(),
+                )
+                raw = response.choices[0].message.content if response.choices else ""
+                finish_reason = response.choices[0].finish_reason if response.choices else "no_choices"
+                usage = getattr(response, "usage", None)
+                reasoning_tokens = ""
+                if usage:
+                    details = getattr(usage, "completion_tokens_details", None)
+                    if details:
+                        reasoning_tokens = getattr(details, "reasoning_tokens", "") or ""
+                if not raw.strip():
+                    logger.warning(
+                        "Persona evaluator empty response | attempt=%d finish_reason=%s reasoning_tokens=%s max_tokens=%s",
+                        attempt + 1, finish_reason, reasoning_tokens or "N/A", self.max_tokens,
+                    )
+                    if attempt == 0:
+                        await asyncio.sleep(1)
+                        continue
+                    return None, raw or "", "persona LLM returned empty content"
+                parsed = self._parse_json(raw or "")
+                if parsed is None:
+                    logger.warning(
+                        "Persona evaluator malformed JSON | attempt=%d finish_reason=%s raw=%s",
+                        attempt + 1, finish_reason, repr(raw[:300]),
+                    )
+                    if attempt == 0:
+                        await asyncio.sleep(1)
+                        continue
+                    return None, raw or "", "persona LLM returned malformed JSON"
+                return self._normalize_evaluation(parsed), raw or "", None
+            except Exception as exc:
+                logger.warning("Persona evaluation failed | attempt=%d error=%s", attempt + 1, exc)
+                if attempt == 0:
+                    await asyncio.sleep(1)
+                    continue
+                return None, "", str(exc)
+        return None, "", "persona evaluation exhausted retries"
 
     def _parse_json(self, raw: str) -> dict | None:
         text = raw.strip()

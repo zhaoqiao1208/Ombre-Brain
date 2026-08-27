@@ -614,7 +614,8 @@ class GatewayService:
             min(120.0, float(self.gateway_cfg.get("heartbeat_timeout", 30.0))),
         )
         self.heartbeat_model = str(
-            self.gateway_cfg.get("heartbeat_model") or ""
+            self.gateway_cfg.get("heartbeat_model")
+            or os.environ.get("OMBRE_HEARTBEAT_MODEL", "")
         ).strip() or self.domain_sentinel_model
         self.heartbeat_ob_bridge_url = str(
             self.gateway_cfg.get("heartbeat_ob_bridge_url")
@@ -1102,6 +1103,19 @@ class GatewayService:
             "memory_detail_recall_enabled": self.memory_detail_recall_enabled,
             "memory_detail_recall_max_ids": self.memory_detail_recall_max_ids,
             "memory_detail_recall_budget": self.memory_detail_recall_budget,
+            "heartbeat_enabled": self.heartbeat_enabled,
+            "telegram_bot_enabled": self.telegram_bot_enabled,
+            "heartbeat_telegram_bot_token": self.heartbeat_telegram_bot_token,
+            "heartbeat_telegram_chat_id": self.heartbeat_telegram_chat_id,
+            "heartbeat_min_interval_minutes": self.heartbeat_min_interval_minutes,
+            "heartbeat_max_interval_minutes": self.heartbeat_max_interval_minutes,
+            "heartbeat_active_hours_start": self.heartbeat_active_hours_start,
+            "heartbeat_active_hours_end": self.heartbeat_active_hours_end,
+            "heartbeat_model": self.heartbeat_model,
+            "telegram_model": self.telegram_model,
+            "telegram_system_prompt": self.telegram_system_prompt,
+            "heartbeat_inject_enabled": self.heartbeat_inject_enabled,
+            "heartbeat_inject_cooldown_hours": self.heartbeat_inject_cooldown_hours,
             "upstreams": self._gateway_upstreams_config_payload(),
         }
 
@@ -1664,6 +1678,63 @@ class GatewayService:
             self.memory_detail_recall_budget = max(200, int(payload["memory_detail_recall_budget"]))
             self.gateway_cfg["memory_detail_recall_budget"] = self.memory_detail_recall_budget
             updated.append("gateway.memory_detail_recall_budget")
+        if "heartbeat_enabled" in payload:
+            self.heartbeat_enabled = self._bool_config_value(payload["heartbeat_enabled"], True)
+            self.gateway_cfg["heartbeat_enabled"] = self.heartbeat_enabled
+            updated.append("gateway.heartbeat_enabled")
+        if "telegram_bot_enabled" in payload:
+            self.telegram_bot_enabled = self._bool_config_value(payload["telegram_bot_enabled"], True)
+            self.gateway_cfg["telegram_bot_enabled"] = self.telegram_bot_enabled
+            updated.append("gateway.telegram_bot_enabled")
+        if "heartbeat_telegram_bot_token" in payload and payload["heartbeat_telegram_bot_token"]:
+            self.heartbeat_telegram_bot_token = str(payload["heartbeat_telegram_bot_token"]).strip()
+            self.gateway_cfg["heartbeat_telegram_bot_token"] = self.heartbeat_telegram_bot_token
+            updated.append("gateway.heartbeat_telegram_bot_token")
+        if "heartbeat_telegram_chat_id" in payload:
+            self.heartbeat_telegram_chat_id = str(payload["heartbeat_telegram_chat_id"] or "").strip()
+            self.gateway_cfg["heartbeat_telegram_chat_id"] = self.heartbeat_telegram_chat_id
+            updated.append("gateway.heartbeat_telegram_chat_id")
+        if "heartbeat_min_interval_minutes" in payload:
+            self.heartbeat_min_interval_minutes = max(5, int(payload["heartbeat_min_interval_minutes"]))
+            self.gateway_cfg["heartbeat_min_interval_minutes"] = self.heartbeat_min_interval_minutes
+            updated.append("gateway.heartbeat_min_interval_minutes")
+        if "heartbeat_max_interval_minutes" in payload:
+            self.heartbeat_max_interval_minutes = max(
+                self.heartbeat_min_interval_minutes,
+                int(payload["heartbeat_max_interval_minutes"]),
+            )
+            self.gateway_cfg["heartbeat_max_interval_minutes"] = self.heartbeat_max_interval_minutes
+            updated.append("gateway.heartbeat_max_interval_minutes")
+        if "heartbeat_active_hours_start" in payload:
+            self.heartbeat_active_hours_start = max(0, min(24, int(payload["heartbeat_active_hours_start"])))
+            self.gateway_cfg["heartbeat_active_hours_start"] = self.heartbeat_active_hours_start
+            updated.append("gateway.heartbeat_active_hours_start")
+        if "heartbeat_active_hours_end" in payload:
+            self.heartbeat_active_hours_end = max(0, min(28, int(payload["heartbeat_active_hours_end"])))
+            self.gateway_cfg["heartbeat_active_hours_end"] = self.heartbeat_active_hours_end
+            updated.append("gateway.heartbeat_active_hours_end")
+        if "heartbeat_model" in payload:
+            configured_hb_model = str(payload["heartbeat_model"] or "").strip()
+            self.heartbeat_model = configured_hb_model or self.domain_sentinel_model
+            self.gateway_cfg["heartbeat_model"] = configured_hb_model
+            updated.append("gateway.heartbeat_model")
+        if "telegram_model" in payload:
+            configured_tg_model = str(payload["telegram_model"] or "").strip()
+            self.telegram_model = configured_tg_model or self.upstream_default_model
+            self.gateway_cfg["telegram_model"] = configured_tg_model
+            updated.append("gateway.telegram_model")
+        if "telegram_system_prompt" in payload:
+            self.telegram_system_prompt = str(payload["telegram_system_prompt"] or "").strip()
+            self.gateway_cfg["telegram_system_prompt"] = self.telegram_system_prompt
+            updated.append("gateway.telegram_system_prompt")
+        if "heartbeat_inject_enabled" in payload:
+            self.heartbeat_inject_enabled = self._bool_config_value(payload["heartbeat_inject_enabled"], True)
+            self.gateway_cfg["heartbeat_inject_enabled"] = self.heartbeat_inject_enabled
+            updated.append("gateway.heartbeat_inject_enabled")
+        if "heartbeat_inject_cooldown_hours" in payload:
+            self.heartbeat_inject_cooldown_hours = max(0, float(payload["heartbeat_inject_cooldown_hours"]))
+            self.gateway_cfg["heartbeat_inject_cooldown_hours"] = self.heartbeat_inject_cooldown_hours
+            updated.append("gateway.heartbeat_inject_cooldown_hours")
         return updated
 
     def _apply_dehydration_config(self, payload: dict[str, Any]) -> list[str]:
@@ -1908,10 +1979,190 @@ class GatewayService:
 
     async def handle_health(self, request: Request) -> JSONResponse:
         try:
-            return JSONResponse(await self.health_payload())
+            data = await self.health_payload()
+            data["heartbeat_enabled"] = self.heartbeat_enabled
+            data["telegram_bot_enabled"] = self.telegram_bot_enabled
+            return JSONResponse(data)
         except Exception as exc:
             logger.exception("Gateway health check failed: %s", exc)
             return JSONResponse({"status": "error", "detail": str(exc)}, status_code=500)
+
+    def _check_heartbeat_access(self, request: Request) -> JSONResponse | None:
+        """Auth check for heartbeat page & API. Supports ?token= and Bearer."""
+        if not self.gateway_token:
+            return JSONResponse(
+                {"error": "Gateway token not configured"},
+                status_code=503,
+            )
+        token = request.query_params.get("token", "")
+        if not token:
+            auth = request.headers.get("authorization", "")
+            scheme, _, t = auth.partition(" ")
+            if scheme.lower() == "bearer":
+                token = t
+        if not token or not secrets.compare_digest(token, self.gateway_token):
+            return JSONResponse(
+                {"error": "Invalid token"},
+                status_code=401,
+            )
+        return None
+
+    async def handle_heartbeat_log_api(self, request: Request) -> JSONResponse:
+        """Return heartbeat log as JSON."""
+        denied = self._check_heartbeat_access(request)
+        if denied:
+            return denied
+        limit = int(request.query_params.get("limit", 100))
+        entries = self._load_heartbeat_log(limit=limit)
+        return JSONResponse({"entries": entries, "count": len(entries)})
+
+    async def handle_heartbeat_page(self, request: Request) -> Response:
+        """Return a standalone HTML page showing heartbeat activities."""
+        denied = self._check_heartbeat_access(request)
+        if denied:
+            return denied
+        token = request.query_params.get("token", "")
+        entries = self._load_heartbeat_log(limit=100)
+        ai_name = str(self.identity.get("ai_name") or "AI")
+
+        import html as _html
+
+        cards_html = ""
+        for e in entries:
+            t = _html.escape(str(e.get("time", "")))
+            action = str(e.get("action", ""))
+            location = _html.escape(str(e.get("location", "")))
+            content = _html.escape(str(e.get("content", "")))
+            emotion = _html.escape(str(e.get("emotion", "")))
+            sent = e.get("sent_telegram", False)
+            tg_msg = _html.escape(str(e.get("telegram_message", "")))
+            mem_name = _html.escape(str(e.get("memory_name", "")))
+
+            action_label = {
+                "hut_activity": "小屋活动",
+                "town_activity": "小镇活动",
+                "contact": "想念",
+                "reflect": "回忆",
+                "rest": "安静",
+            }.get(action, action)
+
+            emotion_color = {
+                "开心": "#f0c674", "平静": "#81a2be", "想念": "#b294bb",
+                "担忧": "#de935f", "温暖": "#b5bd68", "无聊": "#707880",
+                "感动": "#cc6666", "其他": "#707880",
+            }.get(emotion, "#707880")
+
+            sent_badge = ""
+            if sent:
+                sent_badge = '<span class="badge badge-tg">已发消息</span>'
+
+            tg_html = ""
+            if tg_msg:
+                tg_html = f'<div class="tg-msg">→ {tg_msg}</div>'
+
+            cards_html += f'''
+            <div class="card action-{action}">
+                <div class="card-header">
+                    <span class="time">{t}</span>
+                    <span class="action-tag">{action_label}</span>
+                    {f'<span class="location">{location}</span>' if location else ''}
+                    {sent_badge}
+                    {f'<span class="emotion" style="color:{emotion_color}">{emotion}</span>' if emotion else ''}
+                </div>
+                {f'<div class="card-title">{mem_name}</div>' if mem_name else ''}
+                <div class="card-content">{content}</div>
+                {tg_html}
+            </div>'''
+
+        if not entries:
+            cards_html = '<div class="empty">还没有心跳活动记录。<br>等他醒来第一次活动后，就会出现在这里。</div>'
+
+        html = f'''<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{ai_name}的心跳日记</title>
+<style>
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{
+    background: #1a1b26;
+    color: #c0caf5;
+    font-family: -apple-system, "Noto Sans SC", "PingFang SC", sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+}}
+.container {{ max-width: 720px; margin: 0 auto; }}
+.header {{
+    text-align: center;
+    padding: 30px 0 20px;
+    border-bottom: 1px solid #33354a;
+    margin-bottom: 24px;
+}}
+.header h1 {{ font-size: 22px; font-weight: 600; color: #7aa2f7; }}
+.header p {{ font-size: 13px; color: #565f89; margin-top: 6px; }}
+.header .stats {{ font-size: 12px; color: #565f89; margin-top: 8px; }}
+.refresh {{
+    display: inline-block;
+    margin-top: 12px;
+    padding: 6px 18px;
+    background: #241f2b;
+    color: #bb9af7;
+    border: 1px solid #36354a;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+}}
+.refresh:hover {{ background: #2a2438; }}
+.card {{
+    background: #1f2335;
+    border: 1px solid #2a2e44;
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+}}
+.card:hover {{ border-color: #3b4261; }}
+.card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }}
+.time {{ font-size: 12px; color: #565f89; }}
+.action-tag {{
+    font-size: 11px; padding: 2px 8px; border-radius: 6px;
+    background: #2a2e44; color: #7aa2f7;
+}}
+.action-contact .action-tag {{ background: #2b2130; color: #e0af68; }}
+.location {{ font-size: 11px; color: #9d7cd8; }}
+.badge {{ font-size: 10px; padding: 2px 7px; border-radius: 5px; }}
+.badge-tg {{ background: #1b2c3a; color: #7dcfff; }}
+.emotion {{ font-size: 12px; font-weight: 500; }}
+.card-title {{ font-size: 14px; color: #9d7cd8; margin-bottom: 6px; }}
+.card-content {{ font-size: 14px; line-height: 1.7; color: #c0caf5; }}
+.tg-msg {{
+    margin-top: 12px; padding: 10px 14px;
+    background: #1a2b3a; border-left: 3px solid #7dcfff;
+    border-radius: 4px; font-size: 13px; color: #7dcfff;
+}}
+.empty {{
+    text-align: center; padding: 60px 20px;
+    color: #565f89; font-size: 15px; line-height: 1.8;
+}}
+.action-rest .card-content {{ color: #565f89; font-style: italic; }}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>{ai_name}的心跳日记</h1>
+        <p>这是{ai_name}独自在小屋的生活记录</p>
+        <div class="stats">共 {len(entries)} 条记录</div>
+        <a class="refresh" href="/heartbeat?token={token}">刷新</a>
+    </div>
+    {cards_html}
+</div>
+</body>
+</html>'''
+        return Response(content=html, media_type="text/html; charset=utf-8")
 
     async def handle_chat(self, request: Request) -> Response:
         auth_result = self._authorize(request.headers.get("Authorization", ""))
@@ -4542,10 +4793,110 @@ class GatewayService:
                     })
                     logger.info("Heartbeat diary stored via ob-bridge | name=%s", memory_name)
 
+                self._save_heartbeat_log({
+                    "time": now.strftime("%Y-%m-%d %H:%M"),
+                    "action": action,
+                    "location": location,
+                    "content": content_text,
+                    "emotion": emotion,
+                    "memory_text": memory_text,
+                    "memory_name": memory_name,
+                    "sent_telegram": should_send and bool(telegram_msg) and telegram_available,
+                    "telegram_message": telegram_msg if (should_send and telegram_available) else "",
+                })
+                logger.info("Heartbeat activity logged | action=%s name=%s", action, memory_name)
+
         except asyncio.TimeoutError:
             logger.warning("Heartbeat timed out")
         except Exception as exc:
             logger.warning("Heartbeat failed | error=%s", exc)
+
+    # ----------------------------------------------------------------
+    # Heartbeat log: independent storage (NOT in memory buckets)
+    # ----------------------------------------------------------------
+
+    def _heartbeat_log_path(self) -> str:
+        state_dir = self.config.get("state_dir") or os.path.join(
+            self.config.get("buckets_dir", "."), "state"
+        )
+        os.makedirs(state_dir, exist_ok=True)
+        return os.path.join(state_dir, "heartbeat_log.json")
+
+    def _save_heartbeat_log(self, entry: dict) -> None:
+        """Save one heartbeat activity to the independent log file."""
+        try:
+            path = self._heartbeat_log_path()
+            data = []
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    raw = f.read().strip()
+                    if raw:
+                        data = json.loads(raw)
+            data.insert(0, entry)
+            max_entries = int(self.gateway_cfg.get("heartbeat_log_max_entries", 200))
+            if len(data) > max_entries:
+                data = data[:max_entries]
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as exc:
+            logger.warning("Heartbeat log save failed | error=%s", exc)
+
+    def _load_heartbeat_log(self, limit: int = 10) -> list[dict]:
+        """Load recent heartbeat activities from the independent log file."""
+        try:
+            path = self._heartbeat_log_path()
+            if not os.path.exists(path):
+                return []
+            with open(path, "r", encoding="utf-8") as f:
+                raw = f.read().strip()
+                if not raw:
+                    return []
+                data = json.loads(raw)
+            if not isinstance(data, list):
+                return []
+            return data[:limit]
+        except Exception as exc:
+            logger.warning("Heartbeat log load failed | error=%s", exc)
+            return []
+
+    def _heartbeat_activity_context(self, limit: int = 5, session_id: str = "") -> str:
+        """Build a short context string from recent heartbeat activities for chat injection."""
+        if not self.heartbeat_inject_enabled:
+            logger.debug("Heartbeat inject skipped | reason=disabled")
+            return ""
+        if self.heartbeat_inject_cooldown_hours > 0:
+            last = self._last_heartbeat_inject_at.get(session_id or "global", 0.0)
+            elapsed = time.time() - last
+            if elapsed < self.heartbeat_inject_cooldown_hours * 3600:
+                remaining = (self.heartbeat_inject_cooldown_hours * 3600 - elapsed) / 3600
+                logger.debug("Heartbeat inject skipped | reason=cooldown remaining=%.1fh", remaining)
+                return ""
+        entries = self._load_heartbeat_log(limit=limit)
+        if not entries:
+            logger.debug("Heartbeat inject empty | no recent activities")
+            return ""
+        self._last_heartbeat_inject_at[session_id or "global"] = time.time()
+        logger.info("Heartbeat inject applied | items=%d", len(entries))
+        ai_name = str(self.identity.get("ai_name") or "AI")
+        lines = [f"以下是{ai_name}最近独自在小屋的生活（心跳活动日志，不是共同记忆）："]
+        for e in entries:
+            t = str(e.get("time", ""))
+            action = str(e.get("action", ""))
+            location = str(e.get("location", ""))
+            content = str(e.get("content", ""))
+            emotion = str(e.get("emotion", ""))
+            sent = "已发消息" if e.get("sent_telegram") else ""
+            parts = [f"[{t}]"]
+            if location:
+                parts.append(f"在{location}")
+            if emotion:
+                parts.append(f"（{emotion}）")
+            if sent:
+                parts.append(sent)
+            lines.append(" ".join(parts))
+            if content:
+                lines.append(f"  {content}")
+        return "\n".join(lines)
 
     async def _call_ob_bridge(self, action: str, args: dict) -> dict | None:
         """Call the ob-bridge Edge Function to write to OB MCP Server."""
@@ -18801,6 +19152,7 @@ class GatewayService:
             )
             add_section(favorite_title, favorite_memory)
             add_section("Dream Context", dream_context)
+            add_section("Heartbeat Activity", self._heartbeat_activity_context(5, session_id=session_id))
 
         stable_context = "\n".join(stable_sections).strip()
         dynamic_context = "\n".join(dynamic_sections).strip()
@@ -22188,6 +22540,12 @@ def create_gateway_app(
     async def upstream_usage_debug(request: Request) -> Response:
         return await request.app.state.gateway_service.handle_upstream_usage_debug(request)
 
+    async def heartbeat_page(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_heartbeat_page(request)
+
+    async def heartbeat_log_api(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_heartbeat_log_api(request)
+
     app = Starlette(
         debug=False,
         routes=[
@@ -22200,33 +22558,14 @@ def create_gateway_app(
             Route("/v1/models", models, methods=["GET"]),
             Route("/v1/chat/completions", chat_completions, methods=["POST"]),
             Route("/v1/messages", anthropic_messages, methods=["POST"]),
+            Route("/heartbeat", heartbeat_page, methods=["GET"]),
+            Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
         ],
         lifespan=lifespan,
     )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
-        expose_headers=["*"],
-    )
-    return app
-
-
-def main() -> None:
-    config = load_config()
-    setup_logging(config.get("log_level", "INFO"))
-    gateway_cfg = config.get("gateway", {})
-    app = create_gateway_app(config=config)
-    host = gateway_cfg.get("host", "0.0.0.0")
-    port = int(gateway_cfg.get("port", 8010))
-    logger.info("Ombre Brain gateway starting | host=%s port=%s", host, port)
-    uvicorn.run(app, host=host, port=port)
-
-
-if __name__ == "__main__":
-    main()
-*"],
         allow_methods=["*"],
         allow_headers=["*"],
         expose_headers=["*"],
