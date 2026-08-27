@@ -2492,9 +2492,9 @@ body.dark .badge-tg {{
 }}
 .emotion {{ font-size: 12px; font-weight: 500; position: relative; z-index: 1; }}
 .card-title {{ font-size: 14px; color: #4a7a32; margin-bottom: 8px; font-weight: 500; position: relative; z-index: 1; }}
-body.dark .card-title {{ color: #a8cc88; }}
+body.dark .card-title {{ color: #88b8d8; }}
 .card-content {{ font-size: 14px; line-height: 1.8; color: rgba(42, 72, 28, 0.75); position: relative; z-index: 1; }}
-body.dark .card-content {{ color: rgba(184, 212, 160, 0.7); }}
+body.dark .card-content {{ color: rgba(184, 200, 216, 0.7); }}
 .tg-msg {{
     margin-top: 14px; padding: 12px 16px;
     background: rgba(205, 231, 250, 0.15);
