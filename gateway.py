@@ -2436,7 +2436,7 @@ body.dark .card:hover {{
 
 .card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; position: relative; z-index: 1; }}
 .time {{ font-size: 12px; color: rgba(58, 90, 40, 0.35); }}
-body.dark .time {{ color: rgba(184, 212, 160, 0.3); }}
+body.dark .time {{ color: rgba(184, 200, 216, 0.3); }}
 .action-tag {{
     font-size: 11px; padding: 3px 10px; border-radius: 8px;
     background: rgba(74, 122, 50, 0.08);
@@ -2444,9 +2444,9 @@ body.dark .time {{ color: rgba(184, 212, 160, 0.3); }}
     border: 1px solid rgba(74, 122, 50, 0.12);
 }}
 body.dark .action-tag {{
-    background: rgba(168, 204, 136, 0.08);
-    color: #a8cc88;
-    border-color: rgba(168, 204, 136, 0.12);
+    background: rgba(136, 184, 216, 0.08);
+    color: #88b8d8;
+    border-color: rgba(136, 184, 216, 0.12);
 }}
 .action-contact .action-tag {{
     background: rgba(205, 231, 250, 0.3);
