@@ -2145,7 +2145,7 @@ body::after {{
 
 /* ── 暗色主题 ── */
 body.dark {{
-    background: linear-gradient(135deg, #0a1a0a 0%, #142814 25%, #0c1a2a 55%, #0a1a0a 75%, #1a1a0a 100%);
+    background: linear-gradient(135deg, #517888 0%, #7CA96B 50%, #BBD0ED 100%);
     color: #b8d4a0;
 }}
 body.dark::before {{
@@ -22993,4 +22993,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    main()
+== "__main__":
     main()
