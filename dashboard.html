@@ -8699,27 +8699,28 @@ async function loadConfig() {
 }
 
 async function saveAutoMemoryConfig() {
+  var enabled = document.getElementById('auto-extract-enabled').checked;
+  var interval = parseInt(document.getElementById('auto-extract-interval').value, 10) || 10;
+  var maxTokens = parseInt(document.getElementById('auto-extract-max-tokens').value, 10) || 1024;
+  var timeout = parseFloat(document.getElementById('auto-extract-timeout').value) || 15;
   var payload = {
     gateway: {
-      auto_memory_extraction_enabled: document.getElementById('auto-extract-enabled').checked,
-      auto_memory_extraction_interval: parseInt(document.getElementById('auto-extract-interval').value, 10) || 10,
-      auto_memory_extraction_max_tokens: parseInt(document.getElementById('auto-extract-max-tokens').value, 10) || 1024,
-      auto_memory_extraction_timeout: parseFloat(document.getElementById('auto-extract-timeout').value) || 15
+      auto_memory_extraction_enabled: enabled,
+      auto_memory_extraction_interval: interval,
+      auto_memory_extraction_max_tokens: maxTokens,
+      auto_memory_extraction_timeout: timeout
     }
   };
+  var el = document.getElementById('auto-extract-status');
   try {
     var res = await authFetch(BASE + '/api/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if (!res || !res.ok) throw new Error('保存失败');
-    var data = await res.json();
-    var gw = data.gateway || {};
-    var el = document.getElementById('auto-extract-status');
-    if (el) el.textContent = gw.auto_memory_extraction_enabled ? '状态：已启用，每 ' + (gw.auto_memory_extraction_interval || 10) + ' 轮自动提取 · 已保存' : '状态：未启用 · 已保存';
+    if (!res || !res.ok) throw new Error('HTTP ' + (res ? res.status : 'no response'));
+    if (el) el.textContent = enabled ? '状态：已启用，每 ' + interval + ' 轮自动提取 · 已保存' : '状态：未启用 · 已保存';
   } catch (e) {
-    var el = document.getElementById('auto-extract-status');
     if (el) el.textContent = '保存失败: ' + e.message;
   }
 }
