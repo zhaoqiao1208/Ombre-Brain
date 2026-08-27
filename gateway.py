@@ -2075,7 +2075,7 @@ class GatewayService:
             </div>'''
 
         if not entries:
-            cards_html = '<div class="empty">还没有心跳活动记录。<br>等他醒来第一次活动后，就会出现在这里。</div>'
+            cards_html = '<div class="empty glass">还没有心跳活动记录。<br>等他醒来第一次活动后，就会出现在这里。</div>'
 
         html = f'''<!DOCTYPE html>
 <html lang="zh">
@@ -2085,167 +2085,256 @@ class GatewayService:
 <title>{ai_name}的心跳日记</title>
 <style>
 * {{ margin:0; padding:0; box-sizing:border-box; }}
-@keyframes gradientShift {{
+@keyframes drift {{
     0% {{ background-position: 0% 50%; }}
     50% {{ background-position: 100% 50%; }}
     100% {{ background-position: 0% 50%; }}
 }}
 @keyframes fadeInUp {{
-    from {{ opacity: 0; transform: translateY(20px); }}
+    from {{ opacity: 0; transform: translateY(24px); }}
     to {{ opacity: 1; transform: translateY(0); }}
+}}
+@keyframes shimmer {{
+    0% {{ background-position: -200% 0; }}
+    100% {{ background-position: 200% 0; }}
 }}
 @keyframes pulse {{
     0%, 100% {{ opacity: 0.6; transform: scale(1); }}
-    50% {{ opacity: 1; transform: scale(1.05); }}
+    50% {{ opacity: 1; transform: scale(1.08); }}
+}}
+@keyframes float {{
+    0%, 100% {{ transform: translateY(0); }}
+    50% {{ transform: translateY(-6px); }}
 }}
 body {{
-    background: linear-gradient(135deg, #0f0c29, #1a1040, #24243e, #1a1040, #0f0c29);
-    background-size: 400% 400%;
-    animation: gradientShift 20s ease infinite;
-    color: #e0e6f0;
+    background: linear-gradient(160deg, #050C12 0%, #063467 40%, #166DA6 65%, #063467 85%, #050C12 100%);
+    background-size: 300% 300%;
+    animation: drift 25s ease infinite;
+    color: #B5D5DA;
     font-family: -apple-system, "Noto Sans SC", "PingFang SC", sans-serif;
     min-height: 100vh;
     padding: 20px;
     position: relative;
+    overflow-x: hidden;
 }}
 body::before {{
-    content: '';
+    content: "";
     position: fixed;
-    top: -50%; left: -50%;
-    width: 200%; height: 200%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     background:
-        radial-gradient(circle at 20% 30%, rgba(123, 97, 255, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(99, 179, 237, 0.06) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(159, 122, 234, 0.04) 0%, transparent 60%);
+        radial-gradient(ellipse 600px 400px at 15% 20%, rgba(88, 192, 219, 0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 500px at 85% 75%, rgba(22, 109, 166, 0.10) 0%, transparent 70%),
+        radial-gradient(ellipse 300px 300px at 50% 40%, rgba(181, 213, 218, 0.06) 0%, transparent 60%),
+        radial-gradient(circle 200px at 70% 15%, rgba(88, 192, 219, 0.08) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
 }}
+body::after {{
+    content: "";
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image:
+        radial-gradient(circle 3px at 20% 30%, rgba(181, 213, 218, 0.25) 0%, transparent 100%),
+        radial-gradient(circle 2px at 60% 15%, rgba(181, 213, 218, 0.2) 0%, transparent 100%),
+        radial-gradient(circle 4px at 80% 60%, rgba(88, 192, 219, 0.15) 0%, transparent 100%),
+        radial-gradient(circle 2px at 35% 75%, rgba(181, 213, 218, 0.2) 0%, transparent 100%),
+        radial-gradient(circle 3px at 90% 40%, rgba(88, 192, 219, 0.18) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+    animation: float 8s ease-in-out infinite;
+}}
 .container {{ max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }}
+.glass {{
+    background: rgba(181, 213, 218, 0.08);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid rgba(181, 213, 218, 0.15);
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+}}
+.glass::before {{
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    padding: 1px;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        rgba(255, 255, 255, 0.0) 50%,
+        rgba(255, 255, 255, 0.03) 60%,
+        rgba(255, 255, 255, 0.12) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}}
+.glass::after {{
+    content: "";
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(
+        ellipse 40% 30% at 30% 20%,
+        rgba(255, 255, 255, 0.04) 0%,
+        transparent 70%
+    );
+    pointer-events: none;
+}}
 .header {{
     text-align: center;
-    padding: 40px 20px 28px;
-    margin-bottom: 28px;
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
+    padding: 40px 24px 30px;
+    margin-bottom: 24px;
     animation: fadeInUp 0.8s ease;
 }}
 .header h1 {{
     font-size: 24px;
     font-weight: 700;
-    background: linear-gradient(135deg, #a78bfa, #7dd3fc, #c4b5fd);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: gradientShift 6s ease infinite;
+    color: #B5D5DA;
+    letter-spacing: 1px;
+    text-shadow: 0 0 30px rgba(88, 192, 219, 0.3);
 }}
-.header p {{ font-size: 13px; color: rgba(192, 202, 245, 0.5); margin-top: 8px; letter-spacing: 0.5px; }}
-.header .stats {{ font-size: 12px; color: rgba(192, 202, 245, 0.35); margin-top: 6px; }}
+.header p {{ font-size: 13px; color: rgba(181, 213, 218, 0.45); margin-top: 8px; letter-spacing: 0.5px; }}
+.header .stats {{ font-size: 12px; color: rgba(181, 213, 218, 0.3); margin-top: 6px; }}
 .heartbeat-icon {{
     display: inline-block;
     margin-bottom: 12px;
     font-size: 28px;
-    animation: pulse 2s ease-in-out infinite;
+    animation: pulse 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 12px rgba(88, 192, 219, 0.4));
 }}
 .refresh {{
     display: inline-block;
-    margin-top: 14px;
-    padding: 8px 24px;
-    background: rgba(167, 139, 250, 0.12);
-    color: #c4b5fd;
-    border: 1px solid rgba(167, 139, 250, 0.2);
+    margin-top: 16px;
+    padding: 8px 28px;
+    background: rgba(88, 192, 219, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #58C0DB;
+    border: 1px solid rgba(88, 192, 219, 0.2);
     border-radius: 12px;
     font-size: 13px;
     cursor: pointer;
     text-decoration: none;
     transition: all 0.3s ease;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
 }}
 .refresh:hover {{
-    background: rgba(167, 139, 250, 0.22);
-    border-color: rgba(167, 139, 250, 0.35);
+    background: rgba(88, 192, 219, 0.18);
+    border-color: rgba(88, 192, 219, 0.35);
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(167, 139, 250, 0.15);
+    box-shadow: 0 4px 20px rgba(88, 192, 219, 0.15);
 }}
 .card {{
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
+    background: rgba(181, 213, 218, 0.06);
+    backdrop-filter: blur(20px) saturate(1.3);
+    -webkit-backdrop-filter: blur(20px) saturate(1.3);
+    border: 1px solid rgba(181, 213, 218, 0.1);
+    border-radius: 18px;
     padding: 20px 22px;
     margin-bottom: 16px;
-    transition: all 0.3s ease;
+    transition: all 0.35s ease;
     animation: fadeInUp 0.6s ease both;
+    position: relative;
+    overflow: hidden;
+}}
+.card::before {{
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    padding: 1px;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.02) 50%,
+        rgba(255, 255, 255, 0.08) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}}
+.card::after {{
+    content: "";
+    position: absolute;
+    top: -30%; right: -20%;
+    width: 60%; height: 60%;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(255, 255, 255, 0.03) 0%,
+        transparent 70%
+    );
+    pointer-events: none;
 }}
 .card:hover {{
-    border-color: rgba(167, 139, 250, 0.25);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(167, 139, 250, 0.1);
-    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(88, 192, 219, 0.25);
+    transform: translateY(-3px);
+    box-shadow:
+        0 12px 40px rgba(5, 12, 18, 0.3),
+        0 0 0 1px rgba(88, 192, 219, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    background: rgba(181, 213, 218, 0.09);
 }}
-.card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }}
-.time {{ font-size: 12px; color: rgba(192, 202, 245, 0.4); }}
+.card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; position: relative; z-index: 1; }}
+.time {{ font-size: 12px; color: rgba(181, 213, 218, 0.35); }}
 .action-tag {{
     font-size: 11px; padding: 3px 10px; border-radius: 8px;
-    background: rgba(122, 162, 247, 0.12);
-    color: #93c5fd;
-    border: 1px solid rgba(122, 162, 247, 0.15);
+    background: rgba(88, 192, 219, 0.1);
+    color: #58C0DB;
+    border: 1px solid rgba(88, 192, 219, 0.12);
 }}
 .action-contact .action-tag {{
-    background: rgba(224, 175, 104, 0.1);
-    color: #fbbf24;
-    border-color: rgba(224, 175, 104, 0.15);
+    background: rgba(181, 213, 218, 0.1);
+    color: #B5D5DA;
+    border-color: rgba(181, 213, 218, 0.15);
 }}
 .action-reflect .action-tag {{
-    background: rgba(167, 139, 250, 0.1);
-    color: #c4b5fd;
-    border-color: rgba(167, 139, 250, 0.15);
+    background: rgba(22, 109, 166, 0.15);
+    color: #58C0DB;
+    border-color: rgba(22, 109, 166, 0.2);
 }}
 .action-rest .action-tag {{
-    background: rgba(100, 116, 139, 0.1);
-    color: #94a3b8;
-    border-color: rgba(100, 116, 139, 0.15);
+    background: rgba(6, 52, 103, 0.2);
+    color: rgba(181, 213, 218, 0.5);
+    border-color: rgba(6, 52, 103, 0.25);
 }}
-.location {{ font-size: 11px; color: #a78bfa; }}
+.location {{ font-size: 11px; color: #58C0DB; }}
 .badge {{ font-size: 10px; padding: 2px 8px; border-radius: 6px; }}
 .badge-tg {{
-    background: rgba(125, 207, 255, 0.1);
-    color: #7dd3fc;
-    border: 1px solid rgba(125, 207, 255, 0.15);
+    background: rgba(88, 192, 219, 0.08);
+    color: #58C0DB;
+    border: 1px solid rgba(88, 192, 219, 0.12);
 }}
-.emotion {{ font-size: 12px; font-weight: 500; }}
-.card-title {{ font-size: 14px; color: #c4b5fd; margin-bottom: 8px; font-weight: 500; }}
-.card-content {{ font-size: 14px; line-height: 1.8; color: rgba(224, 230, 240, 0.85); }}
+.emotion {{ font-size: 12px; font-weight: 500; position: relative; z-index: 1; }}
+.card-title {{ font-size: 14px; color: #58C0DB; margin-bottom: 8px; font-weight: 500; position: relative; z-index: 1; }}
+.card-content {{ font-size: 14px; line-height: 1.8; color: rgba(181, 213, 218, 0.8); position: relative; z-index: 1; }}
 .tg-msg {{
     margin-top: 14px; padding: 12px 16px;
-    background: rgba(125, 207, 255, 0.06);
-    border-left: 3px solid rgba(125, 207, 255, 0.4);
-    border-radius: 0 8px 8px 0;
-    font-size: 13px; color: #7dd3fc;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(88, 192, 219, 0.06);
+    border-left: 2px solid rgba(88, 192, 219, 0.3);
+    border-radius: 0 10px 10px 0;
+    font-size: 13px; color: #58C0DB;
+    position: relative; z-index: 1;
 }}
 .empty {{
     text-align: center; padding: 80px 20px;
-    color: rgba(192, 202, 245, 0.4); font-size: 15px; line-height: 2;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 16px;
+    color: rgba(181, 213, 218, 0.35); font-size: 15px; line-height: 2;
+    position: relative; z-index: 1;
 }}
-.action-rest .card-content {{ color: rgba(148, 163, 184, 0.6); font-style: italic; }}
+.action-rest .card-content {{ color: rgba(181, 213, 218, 0.4); font-style: italic; }}
 </style>
 </head>
 <body>
 <div class="container">
-    <div class="header">
-        <div class="heartbeat-icon">💜</div>
+    <div class="header glass">
+        <div class="heartbeat-icon">🫧</div>
         <h1>{ai_name}的心跳日记</h1>
         <p>这是{ai_name}独自在小屋的生活记录</p>
         <div class="stats">共 {len(entries)} 条记录</div>
