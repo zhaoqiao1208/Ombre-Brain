@@ -2329,6 +2329,38 @@ body::after {{
     position: relative; z-index: 1;
 }}
 .action-rest .card-content {{ color: rgba(181, 213, 218, 0.4); font-style: italic; }}
+.tabs {{
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+    justify-content: center;
+}}
+.tab {{
+    padding: 6px 16px;
+    font-size: 12px;
+    color: rgba(181, 213, 218, 0.5);
+    background: rgba(88, 192, 219, 0.06);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(181, 213, 218, 0.1);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}}
+.tab:hover {{
+    color: #58C0DB;
+    background: rgba(88, 192, 219, 0.12);
+    border-color: rgba(88, 192, 219, 0.2);
+}}
+.tab.active {{
+    color: #B5D5DA;
+    background: rgba(88, 192, 219, 0.18);
+    border-color: rgba(88, 192, 219, 0.3);
+    box-shadow: 0 0 12px rgba(88, 192, 219, 0.1);
+}}
+.card-hide {{ display: none; }}
 </style>
 </head>
 <body>
