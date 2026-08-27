@@ -8,7 +8,10 @@
 <style>
   :root {
     --bg: #E8E6D8;
-    --bg-gradient: linear-gradient(135deg, #E8E6D8 0%, #9EA88A 50%, #E8E6D8 100%);
+    --bg-gradient: linear-gradient(135deg, #E8E6D8 0%, #9EA88A 35%, #C4CCBA 65%, #E8E6D8 100%);
+    --filter-bg: linear-gradient(145deg, #E8EDE0, #D4DCCA);
+    --filter-active-bg: #C4CCBA;
+    --filter-active-text: #2A3520;
     --surface: rgba(255, 255, 255, 0.55);
     --surface-solid: #F5F3ED;
     --border: rgba(158, 168, 138, 0.15);
@@ -31,10 +34,15 @@
     --tab-bg: rgba(158, 178, 128, 0.2);
     --tab-active-bg: rgba(158, 178, 128, 0.4);
     --tab-border: rgba(158, 178, 128, 0.35);
+    --filter-bg: #C4CCBA;
+    --filter-bg-dark: #B0BAA6;
   }
   [data-theme="ink"] {
     --bg: #D3E5ED;
-    --bg-gradient: linear-gradient(135deg, #D3E5ED 0%, #7E9BA9 40%, #1C2B48 100%);
+    --bg-gradient: linear-gradient(135deg, #D3E5ED 0%, #7E9BA9 35%, #b39ac7 65%, #D3E5ED 100%);
+    --filter-bg: linear-gradient(145deg, #F0F7FF, #E4EDF6);
+    --filter-active-bg: #7E9BA9;
+    --filter-active-text: #F0F7FF;
     --surface: rgba(249, 252, 255, 0.6);
     --surface-solid: #F9FCFF;
     --border: rgba(126, 155, 169, 0.2);
@@ -57,6 +65,8 @@
     --tab-bg: rgba(100, 148, 178, 0.2);
     --tab-active-bg: rgba(100, 148, 178, 0.4);
     --tab-border: rgba(100, 148, 178, 0.35);
+    --filter-bg: #F0F7FF;
+    --filter-bg-dark: #E4EDF6;
   }
   @keyframes bgDrift {
     0% { background-position: 0% 50%; }
@@ -287,7 +297,7 @@
     font-weight: 400;
     border: none;
     border-radius: 24px;
-    background: linear-gradient(145deg, #F0F7FF, #E4EDF6);
+    background: var(--filter-bg);
     color: var(--text-dim);
     cursor: pointer;
     font-family: inherit;
@@ -304,8 +314,8 @@
     box-shadow: inset 2px 2px 5px var(--shadow-dark-subtle), inset -2px -2px 5px var(--shadow-light);
   }
   .filter-btn.active {
-    color: #F0EDE4;
-    background: linear-gradient(145deg, var(--accent-light), var(--accent));
+    color: var(--filter-active-text);
+    background: var(--filter-active-bg);
     box-shadow: inset 3px 3px 6px rgba(0,0,0,0.2), inset -2px -2px 4px rgba(255,255,255,0.05);
   }
   .filter-sort-toggle {
@@ -1195,7 +1205,7 @@
   }
   .btn-secondary {
     padding: 12px 28px;
-    background: linear-gradient(145deg, #F0F7FF, #E4EDF6);
+    background: var(--filter-bg);
     color: var(--accent);
     border: none;
     border-radius: 24px;
