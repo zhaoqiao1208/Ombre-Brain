@@ -4169,6 +4169,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     if (target === 'memory-config') loadConfig();
     if (target === 'reflection') renderReflectionReview();
     if (target === 'chat-memory' && window.initDailyChatMemoryTab) window.initDailyChatMemoryTab();
+    if (target === 'chat-memory') loadAutoMemorySettings();
     if (target === 'dreams') loadDreams();
     if (target === 'persona') loadPersona();
     if (target === 'profile') {
@@ -8685,8 +8686,14 @@ async function loadConfig() {
   } catch (e) {
     setConfigStatus('<span style="color:var(--negative)">加载失败: ' + esc(e.message) + '</span>');
   }
+}
+
+async function loadAutoMemorySettings() {
   try {
-    var gw = (configSnapshot && configSnapshot.gateway) || {};
+    var res = await authFetch(BASE + '/api/config');
+    if (!res) return;
+    var cfg = await res.json();
+    var gw = cfg.gateway || {};
     var aeEl = document.getElementById('auto-extract-enabled');
     if (aeEl) aeEl.checked = !!gw.auto_memory_extraction_enabled;
     var aiEl = document.getElementById('auto-extract-interval');
@@ -8697,7 +8704,7 @@ async function loadConfig() {
     if (atEl) atEl.value = gw.auto_memory_extraction_timeout || 15;
     var asEl = document.getElementById('auto-extract-status');
     if (asEl) asEl.textContent = gw.auto_memory_extraction_enabled ? '状态：已启用，每 ' + (gw.auto_memory_extraction_interval || 10) + ' 轮自动提取' : '状态：未启用';
-  } catch (e2) {}
+  } catch (e) {}
 }
 
 async function saveAutoMemoryConfig() {
