@@ -11814,6 +11814,20 @@ async def api_config_get(request):
             "memory_detail_recall_enabled": _bool_value(gateway_cfg.get("memory_detail_recall_enabled"), False),
             "memory_detail_recall_max_ids": gateway_cfg.get("memory_detail_recall_max_ids", 3),
             "memory_detail_recall_budget": gateway_cfg.get("memory_detail_recall_budget", 1200),
+            "heartbeat_enabled": _bool_value(gateway_cfg.get("heartbeat_enabled"), True),
+            "telegram_bot_enabled": _bool_value(gateway_cfg.get("telegram_bot_enabled"), True),
+            "heartbeat_telegram_chat_id": str(gateway_cfg.get("heartbeat_telegram_chat_id") or ""),
+            "heartbeat_min_interval_minutes": gateway_cfg.get("heartbeat_min_interval_minutes", 30),
+            "heartbeat_max_interval_minutes": gateway_cfg.get("heartbeat_max_interval_minutes", 180),
+            "heartbeat_active_hours_start": gateway_cfg.get("heartbeat_active_hours_start", 8),
+            "heartbeat_active_hours_end": gateway_cfg.get("heartbeat_active_hours_end", 25),
+            "heartbeat_model": str(gateway_cfg.get("heartbeat_model") or ""),
+            "heartbeat_inject_enabled": _bool_value(gateway_cfg.get("heartbeat_inject_enabled"), True),
+            "heartbeat_inject_cooldown_hours": gateway_cfg.get("heartbeat_inject_cooldown_hours", 0),
+            "auto_memory_extraction_enabled": _bool_value(gateway_cfg.get("auto_memory_extraction_enabled"), True),
+            "auto_memory_extraction_interval": gateway_cfg.get("auto_memory_extraction_interval", 10),
+            "auto_memory_extraction_max_tokens": gateway_cfg.get("auto_memory_extraction_max_tokens", 1024),
+            "auto_memory_extraction_timeout": gateway_cfg.get("auto_memory_extraction_timeout", 15.0),
             "upstreams": _dashboard_gateway_upstreams_payload(gateway_cfg),
         },
         "recall": {
@@ -12408,6 +12422,65 @@ async def api_config_update(request):
             gateway_cfg["telegram_system_prompt"] = str(g["telegram_system_prompt"] or "").strip()
             gateway_hot_update_body["telegram_system_prompt"] = gateway_cfg["telegram_system_prompt"]
             updated.append("gateway.telegram_system_prompt")
+        if "heartbeat_enabled" in g:
+            gateway_cfg["heartbeat_enabled"] = _bool_value(g["heartbeat_enabled"], True)
+            gateway_hot_update_body["heartbeat_enabled"] = gateway_cfg["heartbeat_enabled"]
+            updated.append("gateway.heartbeat_enabled")
+        if "telegram_bot_enabled" in g:
+            gateway_cfg["telegram_bot_enabled"] = _bool_value(g["telegram_bot_enabled"], True)
+            gateway_hot_update_body["telegram_bot_enabled"] = gateway_cfg["telegram_bot_enabled"]
+            updated.append("gateway.telegram_bot_enabled")
+        if "heartbeat_telegram_chat_id" in g:
+            gateway_cfg["heartbeat_telegram_chat_id"] = str(g["heartbeat_telegram_chat_id"] or "").strip()
+            gateway_hot_update_body["heartbeat_telegram_chat_id"] = gateway_cfg["heartbeat_telegram_chat_id"]
+            updated.append("gateway.heartbeat_telegram_chat_id")
+        if "heartbeat_min_interval_minutes" in g:
+            gateway_cfg["heartbeat_min_interval_minutes"] = max(5, int(g["heartbeat_min_interval_minutes"]))
+            gateway_hot_update_body["heartbeat_min_interval_minutes"] = gateway_cfg["heartbeat_min_interval_minutes"]
+            updated.append("gateway.heartbeat_min_interval_minutes")
+        if "heartbeat_max_interval_minutes" in g:
+            gateway_cfg["heartbeat_max_interval_minutes"] = max(
+                gateway_cfg.get("heartbeat_min_interval_minutes", 30),
+                int(g["heartbeat_max_interval_minutes"]),
+            )
+            gateway_hot_update_body["heartbeat_max_interval_minutes"] = gateway_cfg["heartbeat_max_interval_minutes"]
+            updated.append("gateway.heartbeat_max_interval_minutes")
+        if "heartbeat_active_hours_start" in g:
+            gateway_cfg["heartbeat_active_hours_start"] = max(0, min(24, int(g["heartbeat_active_hours_start"])))
+            gateway_hot_update_body["heartbeat_active_hours_start"] = gateway_cfg["heartbeat_active_hours_start"]
+            updated.append("gateway.heartbeat_active_hours_start")
+        if "heartbeat_active_hours_end" in g:
+            gateway_cfg["heartbeat_active_hours_end"] = max(0, min(28, int(g["heartbeat_active_hours_end"])))
+            gateway_hot_update_body["heartbeat_active_hours_end"] = gateway_cfg["heartbeat_active_hours_end"]
+            updated.append("gateway.heartbeat_active_hours_end")
+        if "heartbeat_model" in g:
+            gateway_cfg["heartbeat_model"] = str(g["heartbeat_model"] or "").strip()
+            gateway_hot_update_body["heartbeat_model"] = gateway_cfg["heartbeat_model"]
+            updated.append("gateway.heartbeat_model")
+        if "heartbeat_inject_enabled" in g:
+            gateway_cfg["heartbeat_inject_enabled"] = _bool_value(g["heartbeat_inject_enabled"], True)
+            gateway_hot_update_body["heartbeat_inject_enabled"] = gateway_cfg["heartbeat_inject_enabled"]
+            updated.append("gateway.heartbeat_inject_enabled")
+        if "heartbeat_inject_cooldown_hours" in g:
+            gateway_cfg["heartbeat_inject_cooldown_hours"] = max(0.0, float(g["heartbeat_inject_cooldown_hours"]))
+            gateway_hot_update_body["heartbeat_inject_cooldown_hours"] = gateway_cfg["heartbeat_inject_cooldown_hours"]
+            updated.append("gateway.heartbeat_inject_cooldown_hours")
+        if "auto_memory_extraction_enabled" in g:
+            gateway_cfg["auto_memory_extraction_enabled"] = _bool_value(g["auto_memory_extraction_enabled"], False)
+            gateway_hot_update_body["auto_memory_extraction_enabled"] = gateway_cfg["auto_memory_extraction_enabled"]
+            updated.append("gateway.auto_memory_extraction_enabled")
+        if "auto_memory_extraction_interval" in g:
+            gateway_cfg["auto_memory_extraction_interval"] = max(1, min(100, int(g["auto_memory_extraction_interval"])))
+            gateway_hot_update_body["auto_memory_extraction_interval"] = gateway_cfg["auto_memory_extraction_interval"]
+            updated.append("gateway.auto_memory_extraction_interval")
+        if "auto_memory_extraction_max_tokens" in g:
+            gateway_cfg["auto_memory_extraction_max_tokens"] = max(256, min(2048, int(g["auto_memory_extraction_max_tokens"])))
+            gateway_hot_update_body["auto_memory_extraction_max_tokens"] = gateway_cfg["auto_memory_extraction_max_tokens"]
+            updated.append("gateway.auto_memory_extraction_max_tokens")
+        if "auto_memory_extraction_timeout" in g:
+            gateway_cfg["auto_memory_extraction_timeout"] = max(5.0, min(60.0, float(g["auto_memory_extraction_timeout"])))
+            gateway_hot_update_body["auto_memory_extraction_timeout"] = gateway_cfg["auto_memory_extraction_timeout"]
+            updated.append("gateway.auto_memory_extraction_timeout")
         if gateway_hot_update_body:
             gateway_hot_update_payload["gateway"] = gateway_hot_update_body
 
@@ -12905,6 +12978,34 @@ async def api_config_update(request):
                     sc_gateway["telegram_model"] = str(body["gateway"]["telegram_model"] or "").strip()
                 if "telegram_system_prompt" in body["gateway"]:
                     sc_gateway["telegram_system_prompt"] = str(body["gateway"]["telegram_system_prompt"] or "").strip()
+                if "heartbeat_enabled" in body["gateway"]:
+                    sc_gateway["heartbeat_enabled"] = _bool_value(body["gateway"]["heartbeat_enabled"], True)
+                if "telegram_bot_enabled" in body["gateway"]:
+                    sc_gateway["telegram_bot_enabled"] = _bool_value(body["gateway"]["telegram_bot_enabled"], True)
+                if "heartbeat_telegram_chat_id" in body["gateway"]:
+                    sc_gateway["heartbeat_telegram_chat_id"] = str(body["gateway"]["heartbeat_telegram_chat_id"] or "").strip()
+                if "heartbeat_min_interval_minutes" in body["gateway"]:
+                    sc_gateway["heartbeat_min_interval_minutes"] = max(5, int(body["gateway"]["heartbeat_min_interval_minutes"]))
+                if "heartbeat_max_interval_minutes" in body["gateway"]:
+                    sc_gateway["heartbeat_max_interval_minutes"] = max(5, int(body["gateway"]["heartbeat_max_interval_minutes"]))
+                if "heartbeat_active_hours_start" in body["gateway"]:
+                    sc_gateway["heartbeat_active_hours_start"] = max(0, min(24, int(body["gateway"]["heartbeat_active_hours_start"])))
+                if "heartbeat_active_hours_end" in body["gateway"]:
+                    sc_gateway["heartbeat_active_hours_end"] = max(0, min(28, int(body["gateway"]["heartbeat_active_hours_end"])))
+                if "heartbeat_model" in body["gateway"]:
+                    sc_gateway["heartbeat_model"] = str(body["gateway"]["heartbeat_model"] or "").strip()
+                if "heartbeat_inject_enabled" in body["gateway"]:
+                    sc_gateway["heartbeat_inject_enabled"] = _bool_value(body["gateway"]["heartbeat_inject_enabled"], True)
+                if "heartbeat_inject_cooldown_hours" in body["gateway"]:
+                    sc_gateway["heartbeat_inject_cooldown_hours"] = max(0.0, float(body["gateway"]["heartbeat_inject_cooldown_hours"]))
+                if "auto_memory_extraction_enabled" in body["gateway"]:
+                    sc_gateway["auto_memory_extraction_enabled"] = _bool_value(body["gateway"]["auto_memory_extraction_enabled"], False)
+                if "auto_memory_extraction_interval" in body["gateway"]:
+                    sc_gateway["auto_memory_extraction_interval"] = max(1, min(100, int(body["gateway"]["auto_memory_extraction_interval"])))
+                if "auto_memory_extraction_max_tokens" in body["gateway"]:
+                    sc_gateway["auto_memory_extraction_max_tokens"] = max(256, min(2048, int(body["gateway"]["auto_memory_extraction_max_tokens"])))
+                if "auto_memory_extraction_timeout" in body["gateway"]:
+                    sc_gateway["auto_memory_extraction_timeout"] = max(5.0, min(60.0, float(body["gateway"]["auto_memory_extraction_timeout"])))
 
             if "self_anchor" in body and isinstance(body["self_anchor"], dict):
                 sc_self_anchor = save_config.setdefault("self_anchor", {})
