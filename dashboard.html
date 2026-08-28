@@ -8709,7 +8709,8 @@ async function saveAutoMemoryConfig() {
       auto_memory_extraction_interval: interval,
       auto_memory_extraction_max_tokens: maxTokens,
       auto_memory_extraction_timeout: timeout
-    }
+    },
+    persist: true
   };
   var el = document.getElementById('auto-extract-status');
   try {
@@ -8719,7 +8720,7 @@ async function saveAutoMemoryConfig() {
       body: JSON.stringify(payload)
     });
     if (!res || !res.ok) throw new Error('HTTP ' + (res ? res.status : 'no response'));
-    if (el) el.textContent = enabled ? '状态：已启用，每 ' + interval + ' 轮自动提取 · 已保存' : '状态：未启用 · 已保存';
+    if (el) el.textContent = enabled ? '状态：已启用，每 ' + interval + ' 轮自动提取 · 已保存并写入配置' : '状态：未启用 · 已保存并写入配置';
   } catch (e) {
     if (el) el.textContent = '保存失败: ' + e.message;
   }
