@@ -3439,9 +3439,11 @@
       </label>
     </div>
     <div id="auto-extract-status" style="padding:10px 16px;background:var(--surface);border-radius:10px;border:1px solid var(--border);font-size:12px;color:var(--text-dim);margin-bottom:20px;"></div>
-    <div style="display:flex;gap:10px;margin-bottom:24px;">
-      <button type="button" onclick="saveAutoMemoryConfig()" style="padding:10px 28px;background:var(--filter-active-bg);color:var(--filter-active-text);border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;">保存设置</button>
+    <div style="display:flex;gap:12px;margin-top:8px;margin-bottom:24px;">
+      <button class="btn-primary" onclick="saveConfig(false)">应用（仅运行时）</button>
+      <button class="btn-secondary" onclick="saveConfig(true)">应用并写入 config.yaml</button>
     </div>
+    <div id="chat-memory-config-status" style="margin-top:16px;font-size:13px;"></div>
     <div class="reflection-toolbar">
       <div class="reflection-title">
         <h2>记忆候选</h2>
@@ -4168,8 +4170,8 @@ document.querySelectorAll('.tab').forEach(tab => {
     if (target === 'breath') loadGatewayInjections();
     if (target === 'memory-config') loadConfig();
     if (target === 'reflection') renderReflectionReview();
+    if (target === 'chat-memory') loadConfig();
     if (target === 'chat-memory' && window.initDailyChatMemoryTab) window.initDailyChatMemoryTab();
-    if (target === 'chat-memory') loadAutoMemorySettings();
     if (target === 'dreams') loadDreams();
     if (target === 'persona') loadPersona();
     if (target === 'profile') {
@@ -8683,16 +8685,6 @@ async function loadConfig() {
       'Dream API: <strong>' + (cfg.dream.api_ready ? '已设置' : '未设置') + '</strong><br>' +
       'Embedding effective URL: <strong>' + esc(cfg.embedding.effective_base_url || '未设置') + '</strong><br>' +
       'Reranker effective URL: <strong>' + esc(reranker.effective_base_url || '未设置') + '</strong>';
-  } catch (e) {
-    setConfigStatus('<span style="color:var(--negative)">加载失败: ' + esc(e.message) + '</span>');
-  }
-}
-
-async function loadAutoMemorySettings() {
-  try {
-    var res = await authFetch(BASE + '/api/config');
-    if (!res) return;
-    var cfg = await res.json();
     var gw = cfg.gateway || {};
     var aeEl = document.getElementById('auto-extract-enabled');
     if (aeEl) aeEl.checked = !!gw.auto_memory_extraction_enabled;
@@ -8704,7 +8696,9 @@ async function loadAutoMemorySettings() {
     if (atEl) atEl.value = gw.auto_memory_extraction_timeout || 15;
     var asEl = document.getElementById('auto-extract-status');
     if (asEl) asEl.textContent = gw.auto_memory_extraction_enabled ? '状态：已启用，每 ' + (gw.auto_memory_extraction_interval || 10) + ' 轮自动提取' : '状态：未启用';
-  } catch (e) {}
+  } catch (e) {
+    setConfigStatus('<span style="color:var(--negative)">加载失败: ' + esc(e.message) + '</span>');
+  }
 }
 
 async function saveAutoMemoryConfig() {
@@ -8729,14 +8723,15 @@ async function saveAutoMemoryConfig() {
       body: JSON.stringify(payload)
     });
     if (!res || !res.ok) throw new Error('HTTP ' + (res ? res.status : 'no response'));
-    if (el) el.textContent = enabled ? '状态：已启用，每 ' + interval + ' 轮自动提取 · 已保存并写入配置' : '状态：未启用 · 已保存并写入配置';
+    if (el) el.textContent = enabled ? '状态：已启用，每 ' + interval + ' 轮自动提取 · 已保存' : '状态：未启用 · 已保存';
+    loadConfig();
   } catch (e) {
     if (el) el.textContent = '保存失败: ' + e.message;
   }
 }
 
 function setConfigStatus(html) {
-  ['config-status', 'memory-config-status', 'upstream-config-status', 'model-config-status'].forEach(function(id) {
+  ['config-status', 'memory-config-status', 'upstream-config-status', 'model-config-status', 'chat-memory-config-status'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.innerHTML = html;
   });
@@ -8907,6 +8902,14 @@ async function saveConfig(persist, persistEnv) {
       model: document.getElementById('cfg-reflection-model').value,
       thinking_mode: document.getElementById('cfg-reflection-thinking').value,
       base_url: document.getElementById('cfg-reflection-url').value,
+    };
+  }
+  if (activeTarget === 'chat-memory') {
+    candidate.gateway = {
+      auto_memory_extraction_enabled: document.getElementById('auto-extract-enabled').checked,
+      auto_memory_extraction_interval: numberValue('auto-extract-interval', 10),
+      auto_memory_extraction_max_tokens: numberValue('auto-extract-max-tokens', 1024),
+      auto_memory_extraction_timeout: floatValue('auto-extract-timeout', 15),
     };
   }
   if (activeTarget === 'memory-config') {
