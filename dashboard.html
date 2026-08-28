@@ -8682,7 +8682,11 @@ async function loadConfig() {
       'Dream API: <strong>' + (cfg.dream.api_ready ? '已设置' : '未设置') + '</strong><br>' +
       'Embedding effective URL: <strong>' + esc(cfg.embedding.effective_base_url || '未设置') + '</strong><br>' +
       'Reranker effective URL: <strong>' + esc(reranker.effective_base_url || '未设置') + '</strong>';
-    var gw = cfg.gateway || {};
+  } catch (e) {
+    setConfigStatus('<span style="color:var(--negative)">加载失败: ' + esc(e.message) + '</span>');
+  }
+  try {
+    var gw = (configSnapshot && configSnapshot.gateway) || {};
     var aeEl = document.getElementById('auto-extract-enabled');
     if (aeEl) aeEl.checked = !!gw.auto_memory_extraction_enabled;
     var aiEl = document.getElementById('auto-extract-interval');
@@ -8693,9 +8697,7 @@ async function loadConfig() {
     if (atEl) atEl.value = gw.auto_memory_extraction_timeout || 15;
     var asEl = document.getElementById('auto-extract-status');
     if (asEl) asEl.textContent = gw.auto_memory_extraction_enabled ? '状态：已启用，每 ' + (gw.auto_memory_extraction_interval || 10) + ' 轮自动提取' : '状态：未启用';
-  } catch (e) {
-    setConfigStatus('<span style="color:var(--negative)">加载失败: ' + esc(e.message) + '</span>');
-  }
+  } catch (e2) {}
 }
 
 async function saveAutoMemoryConfig() {
