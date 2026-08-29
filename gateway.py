@@ -622,6 +622,14 @@ class GatewayService:
             or os.environ.get("OMBRE_HEARTBEAT_OB_BRIDGE_URL", "")
         ).strip()
         self._heartbeat_task: asyncio.Task | None = None
+        self.isle_supabase_url = str(
+            self.gateway_cfg.get("isle_supabase_url")
+            or os.environ.get("ISLE_SUPABASE_URL", "")
+        ).strip().rstrip("/")
+        self.isle_supabase_key = str(
+            self.gateway_cfg.get("isle_supabase_key")
+            or os.environ.get("ISLE_SUPABASE_KEY", "")
+        ).strip()
         self.heartbeat_inject_enabled = self._bool_config_value(
             self.gateway_cfg.get("heartbeat_inject_enabled"),
             True,
