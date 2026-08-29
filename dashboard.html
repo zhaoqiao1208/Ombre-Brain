@@ -4220,7 +4220,9 @@ document.querySelectorAll('.tab').forEach(tab => {
         if (hbToken) localStorage.setItem('hb-house-token', hbToken);
         else return;
       }
-      window.open(PATH_PREFIX + '/pages/heartbeat-house?token=' + encodeURIComponent(hbToken), '_blank');
+      var gwHost = location.hostname.replace(/^([^.]+)\./, 'gateway-$1.');
+      var gwBase = location.protocol + '//' + gwHost;
+      window.open(gwBase + '/pages/heartbeat-house?token=' + encodeURIComponent(hbToken), '_blank');
       return;
     }
     document.getElementById('import-view').style.display = target === 'import' ? '' : 'none';
