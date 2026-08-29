@@ -5253,6 +5253,20 @@ function toggleTheme() {{
                     })
                     logger.info("Heartbeat diary stored via ob-bridge | name=%s", memory_name)
 
+                room_map = {
+                    "\u5367\u5ba4": "bedroom", "\u53a8\u623f": "kitchen",
+                    "\u82b1\u56ed": "garden", "\u4e66\u623f": "study",
+                    "\u6d74\u5ba4": "bathroom", "\u82b1\u623f": "greenhouse",
+                    "\u9633\u53f0": "garden", "\u5ba2\u5385": "living",
+                }
+                isle_room = room_map.get(location, "living")
+                isle_action_map = {
+                    "hut_activity": "visit", "contact": "miss",
+                    "reflect": "reflect", "rest": "rest",
+                }
+                isle_act = isle_action_map.get(action, "visit")
+                await self._write_isle_activity(isle_room, isle_act, content_text[:200])
+
                 self._save_heartbeat_log({
                     "time": now.strftime("%Y-%m-%d %H:%M"),
                     "action": action,
