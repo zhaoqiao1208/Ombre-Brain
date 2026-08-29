@@ -2071,9 +2071,18 @@ class GatewayService:
         if not name.endswith(".html"):
             name = name + ".html"
         import pathlib
-        base = pathlib.Path(__file__).parent / "pages"
-        page_path = base / name
-        if not page_path.is_file():
+        candidates = [
+            pathlib.Path(__file__).parent / "pages",
+            pathlib.Path.cwd() / "pages",
+            pathlib.Path("/app/pages"),
+        ]
+        page_path = None
+        for base in candidates:
+            p = base / name
+            if p.is_file():
+                page_path = p
+                break
+        if page_path is None:
             return JSONResponse({"error": "page not found"}, status_code=404)
         try:
             content = page_path.read_text(encoding="utf-8")
