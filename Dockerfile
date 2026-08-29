@@ -18,6 +18,7 @@ COPY resources ./resources
 COPY scripts ./scripts
 COPY dashboard.html .
 COPY dashboard_assets ./dashboard_assets
+COPY pages ./pages
 COPY config.example.yaml ./config.yaml
 COPY config.example.yaml ./config.example.yaml
 COPY patch.py ./patch.py
