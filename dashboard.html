@@ -2973,6 +2973,7 @@
   <div class="tab" data-tab="model-config">模型配置</div>
   <div class="tab" data-tab="memory-config">记忆浮现</div>
   <div class="tab" data-tab="import">导入</div>
+  <div class="tab" data-tab="heartbeat-house">记忆小屋</div>
 </div>
 
 <div class="content" id="list-view">
@@ -3378,7 +3379,7 @@
       </div>
       <div style="margin-top:-4px;margin-bottom:12px;padding-left:122px;font-size:11px;color:var(--text-light);">只在 Telegram 生效的人设提示词。留空先读环境变量 OMBRE_TELEGRAM_SYSTEM_PROMPT，未配置则不额外注入</div>
       <div style="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:12px;color:var(--text-light);">
-        心跳活动存在独立日志，不进记忆桶。可在 <a href="/heartbeat" target="_blank" style="color:var(--accent);">心跳日记页面</a> 查看（需 Gateway Token）
+        心跳活动存在独立日志，不进记忆桶。可在 <a href="/pages/heartbeat-house" target="_blank" style="color:var(--accent);">记忆小屋</a> 查看（需 Gateway Token）
       </div>
     </div>
 
@@ -4212,6 +4213,16 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('config-view').style.display = target === 'config' ? '' : 'none';
     document.getElementById('upstream-config-view').style.display = target === 'upstream-config' ? '' : 'none';
     document.getElementById('model-config-view').style.display = target === 'model-config' ? '' : 'none';
+    if (target === 'heartbeat-house') {
+      var hbToken = localStorage.getItem('hb-house-token') || '';
+      if (!hbToken) {
+        hbToken = prompt('输入 Gateway Token 访问记忆小屋：');
+        if (hbToken) localStorage.setItem('hb-house-token', hbToken);
+        else return;
+      }
+      window.open(PATH_PREFIX + '/pages/heartbeat-house?token=' + encodeURIComponent(hbToken), '_blank');
+      return;
+    }
     document.getElementById('import-view').style.display = target === 'import' ? '' : 'none';
     if (target === 'todos') loadTodos();
     if (target === 'breath') loadGatewayInjections();
