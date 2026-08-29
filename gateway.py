@@ -5390,6 +5390,34 @@ function toggleTheme() {{
             logger.warning("OB bridge error | action=%s error=%s", action, exc)
             return None
 
+    async def _write_isle_activity(self, room: str, action: str, detail: str = "") -> bool:
+        """Write a heartbeat activity to Supabase isle_activities table."""
+        if not self.isle_supabase_url or not self.isle_supabase_key:
+            logger.info("Isle activity skipped | reason=no_supabase_config")
+            return False
+        try:
+            response = await asyncio.wait_for(
+                self.http_client.post(
+                    f"{self.isle_supabase_url}/rest/v1/isle_activities",
+                    headers={
+                        "apikey": self.isle_supabase_key,
+                        "Authorization": f"Bearer {self.isle_supabase_key}",
+                        "Content-Type": "application/json",
+                        "Prefer": "return=minimal",
+                    },
+                    json={"room": room, "action": action, "detail": detail},
+                ),
+                timeout=10.0,
+            )
+            if response.status_code >= 400:
+                logger.warning("Isle activity write failed | status=%s", response.status_code)
+                return False
+            logger.info("Isle activity written | room=%s action=%s", room, action)
+            return True
+        except Exception as exc:
+            logger.warning("Isle activity write error | error=%s", exc)
+            return False
+
     @staticmethod
     def _split_telegram_reply(text: str) -> list[str]:
         """Split a long reply into chat bubbles by blank lines, like real messaging."""
