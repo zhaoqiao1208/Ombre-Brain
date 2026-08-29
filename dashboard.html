@@ -76,6 +76,41 @@
     --tab-active-bg: rgba(100, 148, 178, 0.4);
     --tab-border: rgba(100, 148, 178, 0.35);
   }
+  [data-theme="mint"] {
+    --bg: #e8ebe9;
+    --bg-gradient: 
+      radial-gradient(ellipse 75% 55% at 20% 20%, rgba(74,54,41,0.45) 0%, transparent 65%),
+      radial-gradient(ellipse 60% 75% at 80% 75%, rgba(163,192,183,0.6) 0%, transparent 65%),
+      radial-gradient(ellipse 50% 50% at 55% 40%, rgba(211,232,226,0.5) 0%, transparent 60%),
+      radial-gradient(ellipse 65% 40% at 15% 75%, rgba(163,192,183,0.45) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 60% at 75% 15%, rgba(74,54,41,0.25) 0%, transparent 55%),
+      linear-gradient(160deg, #e5ebe8 0%, #d8e0dc 100%);
+    --filter-bg: rgba(240, 245, 243, 0.6);
+    --filter-active-bg: #6b8f83;
+    --filter-active-text: #f5f8f6;
+    --surface: rgba(245, 250, 248, 0.65);
+    --surface-solid: #f3f7f5;
+    --border: rgba(74, 54, 41, 0.12);
+    --border-strong: rgba(74, 54, 41, 0.22);
+    --text: #2e2420;
+    --text-dim: #4a3f38;
+    --text-light: #6a5f58;
+    --accent: #4A3629;
+    --accent-light: #5a4639;
+    --accent-glow: rgba(74, 54, 41, 0.15);
+    --positive: #5a8a6a;
+    --negative: #8b5a4a;
+    --warning: #8a7b5f;
+    --shadow-light: rgba(211, 232, 226, 0.6);
+    --shadow-dark: rgba(74, 54, 41, 0.18);
+    --shadow-dark-subtle: rgba(74, 54, 41, 0.08);
+    --glass-bg: rgba(255, 255, 255, 0.55);
+    --glass-border: rgba(255, 255, 255, 0.7);
+    --glass-highlight: rgba(255, 255, 255, 0.85);
+    --tab-bg: rgba(163, 192, 183, 0.25);
+    --tab-active-bg: rgba(163, 192, 183, 0.45);
+    --tab-border: rgba(163, 192, 183, 0.4);
+  }
   @keyframes bgDrift {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
@@ -9282,18 +9317,23 @@ loadDashboardModule('/dashboard-assets/chat-memory.js?v=20260706-chat-memory-edi
 function toggleDashTheme() {
   var html = document.documentElement;
   var current = html.getAttribute('data-theme');
-  if (current === 'ink') {
-    html.removeAttribute('data-theme');
-    localStorage.setItem('ob-theme', 'bamboo');
-  } else {
+  if (!current || current === 'bamboo') {
     html.setAttribute('data-theme', 'ink');
     localStorage.setItem('ob-theme', 'ink');
+  } else if (current === 'ink') {
+    html.setAttribute('data-theme', 'mint');
+    localStorage.setItem('ob-theme', 'mint');
+  } else {
+    html.removeAttribute('data-theme');
+    localStorage.setItem('ob-theme', 'bamboo');
   }
 }
 (function() {
   var saved = localStorage.getItem('ob-theme');
   if (saved === 'ink') {
     document.documentElement.setAttribute('data-theme', 'ink');
+  } else if (saved === 'mint') {
+    document.documentElement.setAttribute('data-theme', 'mint');
   }
 })();
 </script>
