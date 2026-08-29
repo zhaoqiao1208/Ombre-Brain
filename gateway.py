@@ -23079,6 +23079,7 @@ def create_gateway_app(
             Route("/v1/messages", anthropic_messages, methods=["POST"]),
             Route("/heartbeat", heartbeat_page, methods=["GET"]),
             Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
+            Route("/pages/{name}", serve_page, methods=["GET"]),
         ],
         lifespan=lifespan,
     )
