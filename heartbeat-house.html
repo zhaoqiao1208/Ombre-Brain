@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>记忆小屋</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root {
+  --bg: #E8E6D8;
+  --bg-gradient:
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(158,168,138,0.7) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 80% at 85% 75%, rgba(196,204,186,0.8) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(158,168,138,0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 40% at 75% 15%, rgba(251,250,180,0.35) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 70% at 25% 80%, rgba(196,204,186,0.6) 0%, transparent 55%),
+    linear-gradient(160deg, #E8E6D8 0%, #d5d4c4 100%);
+  --surface: rgba(255,255,255,0.55);
+  --surface-solid: #F5F3ED;
+  --glass-bg: rgba(255,255,255,0.45);
+  --glass-border: rgba(255,255,255,0.65);
+  --glass-highlight: rgba(255,255,255,0.8);
+  --text: #2A3520;
+  --text-dim: #4A5540;
+  --text-light: #6A7560;
+  --accent: #5A6B4A;
+  --accent-light: #7A8B6A;
+  --border: rgba(90,107,74,0.12);
+  --tab-bg: rgba(255,255,255,0.45);
+  --tab-active-bg: rgba(255,255,255,0.75);
+  --tab-active-text: #2A3520;
+  --tag-contact: rgba(178,154,199,0.25);
+  --tag-contact-text: #6a5a7e;
+  --tag-activity: rgba(196,204,186,0.4);
+  --tag-activity-text: #4a5a3a;
+  --tag-reflect: rgba(251,250,180,0.4);
+  --tag-reflect-text: #6a6a2a;
+  --tag-rest: rgba(200,200,200,0.25);
+  --tag-rest-text: #7a7a7a;
+  --tg-bg: rgba(178,154,199,0.12);
+  --tg-border: rgba(178,154,199,0.3);
+  --tg-text: #6a5a7e;
+  --dot: #9EA88A;
+}
+
+[data-theme="ink"] {
+  --bg: #e5ebe8;
+  --bg-gradient:
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(174,204,230,0.65) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 80% at 80% 75%, rgba(246,234,220,0.7) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 50% 45%, rgba(230,246,243,0.5) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 40% at 75% 15%, rgba(174,204,230,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 70% at 25% 80%, rgba(246,234,220,0.5) 0%, transparent 60%),
+    linear-gradient(160deg, #f0f4f6 0%, #f6eadc 100%);
+  --surface: rgba(255,255,255,0.55);
+  --surface-solid: #F0F4F8;
+  --glass-bg: rgba(255,255,255,0.5);
+  --glass-border: rgba(255,255,255,0.7);
+  --glass-highlight: rgba(255,255,255,0.85);
+  --text: #2A3540;
+  --text-dim: #4A5A6A;
+  --text-light: #6A7A8A;
+  --accent: #5A7A8A;
+  --accent-light: #7A9AAA;
+  --border: rgba(100,148,178,0.12);
+  --tab-bg: rgba(255,255,255,0.45);
+  --tab-active-bg: rgba(255,255,255,0.75);
+  --tab-active-text: #2A3540;
+  --tag-contact: rgba(246,234,220,0.5);
+  --tag-contact-text: #8a6a4a;
+  --tag-activity: rgba(174,204,230,0.3);
+  --tag-activity-text: #4a6a8a;
+  --tag-reflect: rgba(230,246,243,0.5);
+  --tag-reflect-text: #4a7a6a;
+  --tag-rest: rgba(200,210,220,0.25);
+  --tag-rest-text: #7a8a9a;
+  --tg-bg: rgba(174,204,230,0.15);
+  --tg-border: rgba(174,204,230,0.35);
+  --tg-text: #4a6a8a;
+  --dot: #aecce6;
+}
+
+[data-theme="mint"] {
+  --bg: #e8ebe9;
+  --bg-gradient:
+    radial-gradient(ellipse 75% 55% at 20% 20%, rgba(74,54,41,0.6) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 75% at 80% 75%, rgba(163,192,183,0.6) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 55% 40%, rgba(211,232,226,0.5) 0%, transparent 60%),
+    radial-gradient(ellipse 65% 40% at 15% 75%, rgba(163,192,183,0.45) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 60% at 75% 15%, rgba(74,54,41,0.4) 0%, transparent 55%),
+    linear-gradient(160deg, #e5ebe8 0%, #d8e0dc 100%);
+  --surface: rgba(245,250,248,0.65);
+  --surface-solid: #f3f7f5;
+  --glass-bg: rgba(255,255,255,0.55);
+  --glass-border: rgba(255,255,255,0.7);
+  --glass-highlight: rgba(255,255,255,0.85);
+  --text: #2e2420;
+  --text-dim: #4a3f38;
+  --text-light: #6a5f58;
+  --accent: #4A3629;
+  --accent-light: #5a4639;
+  --border: rgba(74,54,41,0.12);
+  --tab-bg: rgba(255,255,255,0.45);
+  --tab-active-bg: rgba(255,255,255,0.75);
+  --tab-active-text: #2e2420;
+  --tag-contact: rgba(74,54,41,0.15);
+  --tag-contact-text: #5a4639;
+  --tag-activity: rgba(163,192,183,0.3);
+  --tag-activity-text: #3a5a4a;
+  --tag-reflect: rgba(211,232,226,0.5);
+  --tag-reflect-text: #3a5a4a;
+  --tag-rest: rgba(163,192,183,0.15);
+  --tag-rest-text: #6a5f58;
+  --tg-bg: rgba(74,54,41,0.08);
+  --tg-border: rgba(74,54,41,0.2);
+  --tg-text: #5a4639;
+  --dot: #A3C0B7;
+}
+
+body {
+  background: var(--bg);
+  background: var(--bg-gradient);
+  background-size: 300% 300%;
+  min-height: 100vh;
+  animation: gradientShift 25s ease infinite;
+  font-family: -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  color: var(--text);
+  padding: 0 0 40px;
+}
+
+.container { max-width: 640px; margin: 0 auto; padding: 0 14px; }
+
+/* Header */
+.header {
+  padding: 32px 20px 20px;
+  text-align: center;
+}
+.header-sub { font-size: 11px; color: var(--text-light); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+.header-title { font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: 1px; }
+.header-desc { font-size: 13px; color: var(--text-dim); margin-top: 6px; }
+.header-actions { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; }
+.btn-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 15px; transition: all 0.3s;
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+}
+.btn-icon:active { transform: scale(0.92); }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 0 6px; margin-top: 14px;
+}
+.tab {
+  padding: 6px 14px; font-size: 13px; border-radius: 10px;
+  background: var(--tab-bg); border: 1px solid var(--glass-border);
+  color: var(--text-light); cursor: pointer; transition: all 0.25s;
+  font-family: inherit;
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 1px 4px rgba(0,0,0,0.03);
+}
+.tab.active {
+  background: var(--tab-active-bg); color: var(--tab-active-text);
+  font-weight: 500;
+  border-color: var(--glass-highlight);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 2px 8px rgba(0,0,0,0.04);
+}
+
+/* Cards */
+.cards { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
+
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  padding: 18px 20px;
+  position: relative; overflow: hidden;
+  box-shadow:
+    0 2px 16px rgba(0,0,0,0.04),
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 -1px 0 rgba(0,0,0,0.02);
+  transition: transform 0.2s;
+}
+.card::before {
+  content: '';
+  position: absolute; top: -40%; left: -20%; width: 70%; height: 60%;
+  background: radial-gradient(ellipse 60% 50% at 40% 35%, rgba(255,255,255,0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+.card::after {
+  content: '';
+  position: absolute; inset: 0; border-radius: 18px; padding: 1px;
+  background: linear-gradient(135deg, var(--glass-highlight) 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.0) 50%, rgba(255,255,255,0.08) 60%, rgba(255,255,255,0.35) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none;
+}
+
+.card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; position: relative; z-index: 1; }
+.card-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot); flex-shrink: 0; }
+.card-room {
+  font-size: 12px; padding: 2px 10px; border-radius: 8px;
+  background: var(--tag-activity); color: var(--tag-activity-text);
+}
+.card-status { font-size: 12px; color: var(--text-light); }
+.card-time { font-size: 12px; color: var(--text-light); margin-left: auto; }
+
+.card-content {
+  font-size: 15px; line-height: 1.8; color: var(--text);
+  position: relative; z-index: 1;
+}
+
+.card-tg {
+  margin-top: 12px; padding: 12px 16px;
+  background: var(--tg-bg);
+  border-left: 2px solid var(--tg-border);
+  border-radius: 0 12px 12px 0;
+  position: relative; z-index: 1;
+}
+.card-tg-label { font-size: 11px; color: var(--text-light); margin-bottom: 4px; }
+.card-tg-text { font-size: 14px; line-height: 1.7; color: var(--tg-text); }
+
+.card.action-contact .card-room { background: var(--tag-contact); color: var(--tag-contact-text); }
+.card.action-reflect .card-room { background: var(--tag-reflect); color: var(--tag-reflect-text); }
+.card.action-rest .card-room { background: var(--tag-rest); color: var(--tag-rest-text); }
+.card.action-rest .card-content { color: var(--text-light); font-style: italic; }
+
+.empty {
+  text-align: center; padding: 60px 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  color: var(--text-light); font-size: 14px; line-height: 2;
+}
+
+.loading { text-align: center; padding: 40px; color: var(--text-light); font-size: 13px; }
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.card { animation: fadeIn 0.4s ease both; }
+.card:nth-child(2) { animation-delay: 0.05s; }
+.card:nth-child(3) { animation-delay: 0.1s; }
+.card:nth-child(4) { animation-delay: 0.15s; }
+.card:nth-child(5) { animation-delay: 0.2s; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-sub">A SHARED ARCHIVE</div>
+    <div class="header-title">记忆小屋</div>
+    <div class="header-desc">小屋里，正在发生的每一刻。</div>
+    <div class="header-actions">
+      <button class="btn-icon" id="btnRefresh" onclick="loadData()" title="刷新">↻</button>
+      <button class="btn-icon" id="btnTheme" onclick="cycleTheme()" title="切换主题">🎨</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-filter="all">全部</button>
+    <button class="tab" data-filter="loc-卧室">卧室</button>
+    <button class="tab" data-filter="loc-客厅">客厅</button>
+    <button class="tab" data-filter="loc-厨房">厨房</button>
+    <button class="tab" data-filter="loc-书房">书房</button>
+    <button class="tab" data-filter="loc-花园">花园</button>
+    <button class="tab" data-filter="loc-花房">花房</button>
+    <button class="tab" data-filter="loc-浴室">浴室</button>
+    <button class="tab" data-filter="loc-阳台">阳台</button>
+  </div>
+
+  <div class="cards" id="cards">
+    <div class="loading">加载中…</div>
+  </div>
+</div>
+
+<script>
+var TOKEN = new URLSearchParams(location.search).get('token') || '';
+var allEntries = [];
+
+var ACTION_LABELS = {
+  hut_activity: '小屋活动', town_activity: '小镇活动',
+  contact: '想念', reflect: '回忆', rest: '安静'
+};
+
+function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function renderCards(entries) {
+  var box = document.getElementById('cards');
+  if (!entries || entries.length === 0) {
+    box.innerHTML = '<div class="empty">还没有心跳活动记录。<br>等他醒来第一次活动后，就会出现在这里。</div>';
+    return;
+  }
+  var h = '';
+  for (var i = 0; i < entries.length; i++) {
+    var e = entries[i];
+    var action = e.action || 'rest';
+    var location = e.location || '';
+    var content = e.content || '';
+    var emotion = e.emotion || '';
+    var time = e.time || '';
+    var sent = e.sent_telegram;
+    var tgMsg = e.telegram_message || '';
+    var label = ACTION_LABELS[action] || action;
+
+    var tgHtml = '';
+    if (sent && tgMsg) {
+      tgHtml = '<div class="card-tg"><div class="card-tg-label">发给桥桥的消息</div><div class="card-tg-text">' + esc(tgMsg) + '</div></div>';
+    }
+
+    var statusText = sent ? '已发消息' : label;
+
+    h += '<div class="card action-' + esc(action) + '" data-location="' + esc(location) + '">' +
+      '<div class="card-top">' +
+        '<span class="card-dot"></span>' +
+        '<span class="card-room">' + esc(location || '小屋') + '</span>' +
+        '<span class="card-status">' + esc(statusText) + '</span>' +
+        '<span class="card-time">' + esc(time) + '</span>' +
+      '</div>' +
+      '<div class="card-content">' + esc(content) + '</div>' +
+      tgHtml +
+    '</div>';
+  }
+  box.innerHTML = h;
+}
+
+function filterCards(filterVal) {
+  if (filterVal === 'all') {
+    renderCards(allEntries);
+    return;
+  }
+  var loc = filterVal.replace('loc-', '');
+  var filtered = allEntries.filter(function(e) { return e.location === loc; });
+  renderCards(filtered);
+}
+
+function loadData() {
+  var url = '/api/heartbeat-log?limit=200';
+  if (TOKEN) url += '&token=' + encodeURIComponent(TOKEN);
+  fetch(url).then(function(r) {
+    if (!r.ok) throw new Error('API error ' + r.status);
+    return r.json();
+  }).then(function(data) {
+    allEntries = data.entries || [];
+    renderCards(allEntries);
+  }).catch(function(err) {
+    document.getElementById('cards').innerHTML = '<div class="empty">加载失败：' + esc(err.message) + '</div>';
+  });
+}
+
+document.getElementById('tabs').addEventListener('click', function(ev) {
+  var btn = ev.target.closest('.tab');
+  if (!btn) return;
+  document.querySelectorAll('.tab').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  filterCards(btn.getAttribute('data-filter'));
+});
+
+var THEMES = ['bamboo', 'ink', 'mint'];
+function cycleTheme() {
+  var html = document.documentElement;
+  var cur = html.getAttribute('data-theme') || '';
+  var idx = THEMES.indexOf(cur === '' ? 'bamboo' : cur);
+  var next = THEMES[(idx + 1) % THEMES.length];
+  if (next === 'bamboo') { html.removeAttribute('data-theme'); }
+  else { html.setAttribute('data-theme', next); }
+  localStorage.setItem('hb-house-theme', next);
+}
+(function() {
+  var saved = localStorage.getItem('hb-house-theme');
+  if (saved === 'ink') document.documentElement.setAttribute('data-theme', 'ink');
+  else if (saved === 'mint') document.documentElement.setAttribute('data-theme', 'mint');
+})();
+
+loadData();
+</script>
+</body>
+</html>
