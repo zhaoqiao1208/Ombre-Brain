@@ -341,7 +341,7 @@ function filterCards(filterVal) {
 }
 
 function loadData() {
-  var url = '/heartbeat/log?limit=200';
+  var url = '/api/heartbeat-log?limit=200';
   if (TOKEN) url += '&token=' + encodeURIComponent(TOKEN);
   fetch(url).then(function(r) {
     if (!r.ok) throw new Error('API error ' + r.status);
