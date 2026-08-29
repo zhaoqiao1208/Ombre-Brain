@@ -2060,6 +2060,28 @@ class GatewayService:
         entries = self._load_heartbeat_log(limit=limit)
         return JSONResponse({"entries": entries, "count": len(entries)})
 
+    async def handle_serve_page(self, request: Request) -> Response:
+        """Serve static HTML pages from the pages/ directory."""
+        denied = self._check_heartbeat_access(request)
+        if denied:
+            return denied
+        name = request.path_params.get("name", "")
+        if not name or "/" in name or "\\" in name or ".." in name:
+            return JSONResponse({"error": "invalid page name"}, status_code=400)
+        if not name.endswith(".html"):
+            name = name + ".html"
+        import pathlib
+        base = pathlib.Path(__file__).parent / "pages"
+        page_path = base / name
+        if not page_path.is_file():
+            return JSONResponse({"error": "page not found"}, status_code=404)
+        try:
+            content = page_path.read_text(encoding="utf-8")
+            return Response(content=content, media_type="text/html; charset=utf-8")
+        except Exception as exc:
+            logger.warning("serve_page failed | name=%s error=%s", name, exc)
+            return JSONResponse({"error": "read failed"}, status_code=500)
+
     async def handle_heartbeat_page(self, request: Request) -> Response:
         """Return a standalone HTML page showing heartbeat activities."""
         denied = self._check_heartbeat_access(request)
