@@ -23111,6 +23111,7 @@ def create_gateway_app(
             Route("/heartbeat", heartbeat_page, methods=["GET"]),
             Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
             Route("/pages/{name}", serve_page, methods=["GET"]),
+            Route("/pages-debug", lambda r: JSONResponse({"cwd": str(__import__('pathlib').Path.cwd()), "file": str(__import__('pathlib').Path(__file__).parent), "cwd_ls": [str(p) for p in __import__('pathlib').Path.cwd().iterdir()][:30], "pages_exists_cwd": (__import__('pathlib').Path.cwd() / "pages").is_dir(), "pages_exists_file": (__import__('pathlib').Path(__file__).parent / "pages").is_dir()}), methods=["GET"]),
         ],
         lifespan=lifespan,
     )
