@@ -441,6 +441,9 @@ class PersonaStateEngine:
                 ),
             )
             raw = response.choices[0].message.content if response.choices else ""
+            if not str(raw or "").strip():
+                # 空 content 时尝试从 reasoning 通道恢复（与 evaluator 相同的中转站路由问题）
+                raw = self._message_reasoning_text(response.choices[0].message) if response.choices else ""
             parsed = self._parse_json(raw or "")
             if parsed is None:
                 logger.warning("Persona conflict nudge detector returned malformed JSON")
@@ -772,13 +775,22 @@ class PersonaStateEngine:
         ]
         for attempt in range(2):
             try:
+                completion_options = self._completion_options()
+                if attempt == 1 and self.json_response_format:
+                    # 第一次空返回大概率是中转站在 thinking + json_object 组合下
+                    # 把输出路由进了 reasoning 通道，重试时去掉 response_format，
+                    # 让模型自由输出，解析交给 _parse_json 兜底
+                    completion_options.pop("response_format", None)
                 response = await self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
-                    **self._completion_options(),
+                    **completion_options,
                 )
                 raw = response.choices[0].message.content if response.choices else ""
                 finish_reason = response.choices[0].finish_reason if response.choices else "no_choices"
+                reasoning_raw = (
+                    self._message_reasoning_text(response.choices[0].message) if response.choices else ""
+                )
                 usage = getattr(response, "usage", None)
                 reasoning_tokens = ""
                 if usage:
@@ -786,9 +798,17 @@ class PersonaStateEngine:
                     if details:
                         reasoning_tokens = getattr(details, "reasoning_tokens", "") or ""
                 if not raw.strip():
+                    recovered = self._recover_evaluation_from_reasoning(reasoning_raw)
+                    if recovered is not None:
+                        logger.info(
+                            "Persona evaluator recovered from reasoning channel | attempt=%d finish_reason=%s reasoning_tokens=%s reasoning_chars=%d",
+                            attempt + 1, finish_reason, reasoning_tokens or "N/A", len(reasoning_raw),
+                        )
+                        return self._normalize_evaluation(recovered), reasoning_raw, None
                     logger.warning(
-                        "Persona evaluator empty response | attempt=%d finish_reason=%s reasoning_tokens=%s max_tokens=%s",
+                        "Persona evaluator empty response | attempt=%d finish_reason=%s reasoning_tokens=%s max_tokens=%s reasoning_head=%s",
                         attempt + 1, finish_reason, reasoning_tokens or "N/A", self.max_tokens,
+                        repr(reasoning_raw[:300]) if reasoning_raw.strip() else "empty",
                     )
                     if attempt == 0:
                         await asyncio.sleep(1)
@@ -812,6 +832,71 @@ class PersonaStateEngine:
                     continue
                 return None, "", str(exc)
         return None, "", "persona evaluation exhausted retries"
+
+    def _message_reasoning_text(self, message: Any) -> str:
+        """提取消息里的思考文本，兼容各家中转站的字段变体。"""
+        for attr in ("reasoning_content", "reasoning"):
+            value = getattr(message, attr, None)
+            if isinstance(value, str) and value.strip():
+                return value
+        details = getattr(message, "reasoning_details", None)
+        if isinstance(details, list):
+            parts = []
+            for item in details:
+                if isinstance(item, dict):
+                    text = str(item.get("text") or item.get("summary") or "")
+                else:
+                    text = str(getattr(item, "text", "") or getattr(item, "summary", "") or "")
+                if text.strip():
+                    parts.append(text)
+            joined = "\n".join(parts)
+            if joined.strip():
+                return joined
+        extra = getattr(message, "model_extra", None)
+        if isinstance(extra, dict):
+            for key in ("reasoning_content", "reasoning"):
+                value = extra.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value
+        return ""
+
+    def _iter_json_candidates(self, text: str):
+        """从自由文本中产出所有顶层平衡的 {...} 块，正确处理字符串内的花括号和转义。"""
+        depth = 0
+        start = -1
+        in_string = False
+        escape = False
+        for idx, ch in enumerate(text):
+            if in_string:
+                if escape:
+                    escape = False
+                elif ch == "\\":
+                    escape = True
+                elif ch == '"':
+                    in_string = False
+                continue
+            if ch == '"':
+                in_string = True
+            elif ch == "{":
+                if depth == 0:
+                    start = idx
+                depth += 1
+            elif ch == "}":
+                if depth > 0:
+                    depth -= 1
+                    if depth == 0 and start >= 0:
+                        yield text[start : idx + 1]
+                        start = -1
+
+    def _recover_evaluation_from_reasoning(self, reasoning_text: str) -> dict | None:
+        """content 为空时，尝试从思考通道文本中恢复 JSON 评估结果。"""
+        if not reasoning_text or not reasoning_text.strip():
+            return None
+        for candidate in self._iter_json_candidates(reasoning_text):
+            parsed = self._parse_json(candidate)
+            if parsed is not None:
+                return parsed
+        return None
 
     def _parse_json(self, raw: str) -> dict | None:
         text = raw.strip()

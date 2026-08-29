@@ -5228,7 +5228,10 @@ function toggleTheme() {{
             )
 
             if should_send and telegram_msg and telegram_available:
+                logger.info("Heartbeat sending telegram | msg=%.60s", telegram_msg)
                 await self._send_telegram_message(telegram_msg)
+            else:
+                logger.info("Heartbeat no telegram | should_send=%s has_msg=%s tg_available=%s", should_send, bool(telegram_msg), telegram_available)
 
             if memory_text:
                 is_diary = (action == "hut_activity" and location == "卧室") or action == "reflect"
@@ -5483,6 +5486,7 @@ function toggleTheme() {{
                             )
                             continue
                         continue
+                    logger.info("Telegram message received | chat_id=%s text=%.50s", msg_chat_id, text)
                     asyncio.create_task(self._handle_telegram_chat(msg_chat_id, text))
             except asyncio.CancelledError:
                 logger.info("Telegram bot loop cancelled")
@@ -5508,6 +5512,8 @@ function toggleTheme() {{
                 await self._send_telegram_message("系统还没配置好模型，暂时无法回复。", chat_id=chat_id)
                 return
 
+            logger.info("Telegram chat processing | chat_id=%s model=%s history_len=%d", chat_id, model or "(none)", len(history))
+
             messages = list(history)
             if self.telegram_system_prompt:
                 messages.insert(0, {"role": "system", "content": self.telegram_system_prompt})
@@ -5530,6 +5536,16 @@ function toggleTheme() {{
                 logger.warning("Telegram chat prepare failed | error=%s", exc)
                 await self._send_telegram_message("记忆系统出了点问题，稍等一下再试。", chat_id=chat_id)
                 return
+
+            # 当前时间注入到最后一条 user message（不破坏 prompt cache 前缀）
+            _now_str = datetime.now(self.gateway_tz).strftime("%Y-%m-%d %H:%M %A")
+            _fwd_messages = forward_payload.get("messages")
+            if isinstance(_fwd_messages, list) and _fwd_messages:
+                for _mi in range(len(_fwd_messages) - 1, -1, -1):
+                    if isinstance(_fwd_messages[_mi], dict) and _fwd_messages[_mi].get("role") == "user":
+                        _orig = self._coerce_message_text(_fwd_messages[_mi].get("content"))
+                        _fwd_messages[_mi] = {"role": "user", "content": _orig + f"\n\n[当前时间：{_now_str}]"}
+                        break
 
             upstream_response = await self._forward_upstream(forward_payload)
             if upstream_response.status_code >= 400:
@@ -5596,8 +5612,8 @@ function toggleTheme() {{
                 logger.warning("Telegram persona update failed | error=%s", exc)
 
             logger.info(
-                "Telegram chat completed | chat_id=%s session=%s reply_chars=%s",
-                chat_id, session_id, len(reply_text),
+                "Telegram chat completed | chat_id=%s session=%s model=%s reply_chars=%s",
+                chat_id, session_id, model or "(none)", len(reply_text),
             )
 
         except Exception as exc:
