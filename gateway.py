@@ -100,6 +100,7 @@ from persona_event_selection import (
 from raw_events import RawEventStore, raw_event_text_looks_injected, strip_raw_client_context
 from reminder_store import ReminderStore
 from reranker_engine import RerankerEngine
+from work_shift import today_shift_summary
 from self_anchor import is_self_anchor_bucket, is_self_anchor_metadata
 from source_refs import source_ref_window
 from utils import (
@@ -2090,565 +2091,6 @@ class GatewayService:
         except Exception as exc:
             logger.warning("serve_page failed | name=%s error=%s", name, exc)
             return JSONResponse({"error": "read failed"}, status_code=500)
-
-    async def handle_heartbeat_page(self, request: Request) -> Response:
-        """Return a standalone HTML page showing heartbeat activities."""
-        denied = self._check_heartbeat_access(request)
-        if denied:
-            return denied
-        token = request.query_params.get("token", "")
-        entries = self._load_heartbeat_log(limit=100)
-        ai_name = str(self.identity.get("ai_name") or "AI")
-
-        import html as _html
-
-        cards_html = ""
-        for e in entries:
-            t = _html.escape(str(e.get("time", "")))
-            action = str(e.get("action", ""))
-            location = _html.escape(str(e.get("location", "")))
-            content = _html.escape(str(e.get("content", "")))
-            emotion = _html.escape(str(e.get("emotion", "")))
-            sent = e.get("sent_telegram", False)
-            tg_msg = _html.escape(str(e.get("telegram_message", "")))
-            mem_name = _html.escape(str(e.get("memory_name", "")))
-
-            action_label = {
-                "hut_activity": "小屋活动",
-                "town_activity": "小镇活动",
-                "contact": "想念",
-                "reflect": "回忆",
-                "rest": "安静",
-            }.get(action, action)
-
-            emotion_color = {
-                "开心": "#f0c674", "平静": "#81a2be", "想念": "#b294bb",
-                "担忧": "#de935f", "温暖": "#b5bd68", "无聊": "#707880",
-                "感动": "#cc6666", "其他": "#707880",
-            }.get(emotion, "#707880")
-
-            sent_badge = ""
-            if sent:
-                sent_badge = '<span class="badge badge-tg">已发消息</span>'
-
-            tg_html = ""
-            if tg_msg:
-                tg_html = f'<div class="tg-msg">→ {tg_msg}</div>'
-
-            cards_html += f'''
-            <div class="card action-{action}">
-                <div class="card-header">
-                    <span class="time">{t}</span>
-                    <span class="action-tag">{action_label}</span>
-                    {f'<span class="location">{location}</span>' if location else ''}
-                    {sent_badge}
-                    {f'<span class="emotion" style="color:{emotion_color}">{emotion}</span>' if emotion else ''}
-                </div>
-                {f'<div class="card-title">{mem_name}</div>' if mem_name else ''}
-                <div class="card-content">{content}</div>
-                {tg_html}
-            </div>'''
-
-        if not entries:
-            cards_html = '<div class="empty glass">还没有心跳活动记录。<br>等他醒来第一次活动后，就会出现在这里。</div>'
-
-        html = f'''<!DOCTYPE html>
-<html lang="zh">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{ai_name}的心跳日记</title>
-<style>
-* {{ margin:0; padding:0; box-sizing:border-box; }}
-@keyframes drift {{
-    0% {{ background-position: 0% 50%; }}
-    50% {{ background-position: 100% 50%; }}
-    100% {{ background-position: 0% 50%; }}
-}}
-@keyframes fadeInUp {{
-    from {{ opacity: 0; transform: translateY(20px); }}
-    to {{ opacity: 1; transform: translateY(0); }}
-}}
-@keyframes pulse {{
-    0%, 100% {{ opacity: 0.6; transform: scale(1); }}
-    50% {{ opacity: 1; transform: scale(1.08); }}
-}}
-@keyframes float {{
-    0%, 100% {{ transform: translateY(0); }}
-    50% {{ transform: translateY(-5px); }}
-}}
-
-/* ── 亮色主题（默认） ── */
-body {{
-    background: linear-gradient(135deg, #ECF7E1 0%, #D3E8B7 25%, #CDE7FA 55%, #ECF7E1 75%, #FFF4B6 100%);
-    background-size: 300% 300%;
-    animation: drift 20s ease infinite;
-    color: #3a5a28;
-    font-family: -apple-system, "Noto Sans SC", "PingFang SC", sans-serif;
-    min-height: 100vh;
-    padding: 20px;
-    position: relative;
-    overflow-x: hidden;
-    transition: background 0.6s ease, color 0.6s ease;
-}}
-body::before {{
-    content: '';
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background:
-        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(211, 232, 183, 0.5) 0%, transparent 70%),
-        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(205, 231, 250, 0.4) 0%, transparent 70%),
-        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(255, 244, 182, 0.3) 0%, transparent 60%);
-    pointer-events: none;
-    z-index: 0;
-}}
-body::after {{
-    content: '';
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-image:
-        radial-gradient(circle 3px at 15% 25%, rgba(211, 232, 183, 0.4) 0%, transparent 100%),
-        radial-gradient(circle 2px at 55% 12%, rgba(205, 231, 250, 0.35) 0%, transparent 100%),
-        radial-gradient(circle 4px at 82% 55%, rgba(255, 244, 182, 0.3) 0%, transparent 100%),
-        radial-gradient(circle 2px at 38% 78%, rgba(211, 232, 183, 0.3) 0%, transparent 100%);
-    pointer-events: none;
-    z-index: 0;
-    animation: float 10s ease-in-out infinite;
-}}
-
-/* ── 暗色主题 ── */
-body.dark {{
-    background: linear-gradient(135deg, #223C5B 0%, #43638C 25%, #7189A5 55%, #223C5B 75%, #ADD1F3 100%);
-    background-size: 300% 300%;
-    animation: drift 20s ease infinite;
-    color: #e8eaf0;
-    font-weight: 500;
-}}
-body.dark::before {{
-    background:
-        radial-gradient(ellipse 500px 400px at 20% 25%, rgba(68, 99, 140, 0.5) 0%, transparent 70%),
-        radial-gradient(ellipse 400px 400px at 80% 70%, rgba(173, 209, 243, 0.4) 0%, transparent 70%),
-        radial-gradient(ellipse 300px 250px at 60% 30%, rgba(221, 231, 243, 0.3) 0%, transparent 60%);
-}}
-body.dark::after {{
-    background-image:
-        radial-gradient(circle 3px at 15% 25%, rgba(173, 209, 243, 0.4) 0%, transparent 100%),
-        radial-gradient(circle 2px at 55% 12%, rgba(221, 231, 243, 0.35) 0%, transparent 100%),
-        radial-gradient(circle 4px at 82% 55%, rgba(173, 209, 243, 0.3) 0%, transparent 100%),
-        radial-gradient(circle 2px at 38% 78%, rgba(221, 231, 243, 0.3) 0%, transparent 100%);
-}}
-
-.container {{ max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }}
-
-/* ── 毛玻璃卡片 ── */
-.glass {{
-    background: rgba(255, 255, 255, 0.35);
-    backdrop-filter: blur(20px) saturate(1.6);
-    -webkit-backdrop-filter: blur(20px) saturate(1.6);
-    border: 1px solid rgba(255, 255, 255, 0.55);
-    border-radius: 20px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
-}}
-.glass::before {{
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 20px;
-    padding: 1px;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.7) 0%,
-        rgba(255, 255, 255, 0.2) 40%,
-        rgba(255, 255, 255, 0.0) 50%,
-        rgba(255, 255, 255, 0.15) 60%,
-        rgba(255, 255, 255, 0.5) 100%
-    );
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-}}
-.glass::after {{
-    content: '';
-    position: absolute;
-    top: -40%; left: -30%;
-    width: 160%; height: 80%;
-    background: radial-gradient(
-        ellipse 50% 40% at 35% 30%,
-        rgba(255, 255, 255, 0.15) 0%,
-        transparent 70%
-    );
-    pointer-events: none;
-}}
-
-body.dark .glass {{
-    background: rgba(255, 255, 255, 0.10);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-}}
-body.dark .glass::before {{
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.15) 0%,
-        rgba(255, 255, 255, 0.03) 40%,
-        rgba(255, 255, 255, 0.0) 50%,
-        rgba(255, 255, 255, 0.02) 60%,
-        rgba(255, 255, 255, 0.1) 100%
-    );
-}}
-body.dark .glass::after {{
-    background: radial-gradient(
-        ellipse 50% 40% at 35% 30%,
-        rgba(255, 255, 255, 0.03) 0%,
-        transparent 70%
-    );
-}}
-
-/* ── Header ── */
-.header {{
-    text-align: center;
-    padding: 40px 24px 28px;
-    margin-bottom: 24px;
-    animation: fadeInUp 0.8s ease;
-}}
-.header h1 {{
-    font-size: 26px;
-    font-weight: 700;
-    color: #2d5018;
-    letter-spacing: 1px;
-}}
-body.dark .header h1 {{ color: #E8F0FA; }}
-.header p {{ font-size: 15px; color: rgba(45, 80, 24, 0.65); margin-top: 8px; letter-spacing: 0.5px; }}
-body.dark .header p {{ color: rgba(221, 231, 243, 0.7); }}
-.header .stats {{ font-size: 14px; color: rgba(45, 80, 24, 0.5); margin-top: 6px; }}
-body.dark .header .stats {{ color: rgba(221, 231, 243, 0.55); }}
-.heartbeat-icon {{
-    display: inline-block;
-    margin-bottom: 12px;
-    font-size: 28px;
-    animation: pulse 3s ease-in-out infinite;
-}}
-
-/* ── 主题切换按钮 ── */
-.theme-toggle {{
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    z-index: 100;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-}}
-.theme-toggle:hover {{
-    transform: scale(1.1);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-}}
-body.dark .theme-toggle {{
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
-}}
-
-/* ── 刷新按钮 ── */
-.refresh {{
-    display: inline-block;
-    margin-top: 16px;
-    padding: 8px 28px;
-    background: rgba(74, 122, 50, 0.08);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    color: #4a7a32;
-    border: 1px solid rgba(74, 122, 50, 0.15);
-    border-radius: 12px;
-    font-size: 15px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}}
-.refresh:hover {{
-    background: rgba(74, 122, 50, 0.15);
-    border-color: rgba(74, 122, 50, 0.25);
-    transform: translateY(-1px);
-}}
-body.dark .refresh {{
-    color: #88b8d8;
-    background: rgba(136, 184, 216, 0.08);
-    border-color: rgba(136, 184, 216, 0.15);
-}}
-
-/* ── Tabs ── */
-.tabs {{
-    display: flex;
-    gap: 8px;
-    margin-top: 18px;
-    flex-wrap: wrap;
-    justify-content: center;
-}}
-.tab {{
-    padding: 6px 16px;
-    font-size: 14px;
-    color: rgba(58, 90, 40, 0.5);
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-family: inherit;
-}}
-.tab:hover {{
-    color: #4a7a32;
-    background: rgba(211, 232, 183, 0.3);
-    border-color: rgba(211, 232, 183, 0.5);
-}}
-.tab.active {{
-    color: #3a5a28;
-    background: rgba(211, 232, 183, 0.4);
-    border-color: rgba(211, 232, 183, 0.6);
-    box-shadow: 0 0 12px rgba(211, 232, 183, 0.2);
-}}
-body.dark .tab {{
-    color: rgba(184, 200, 216, 0.4);
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.08);
-}}
-body.dark .tab:hover {{
-    color: #88b8d8;
-    background: rgba(136, 184, 216, 0.1);
-    border-color: rgba(136, 184, 216, 0.2);
-}}
-body.dark .tab.active {{
-    color: #b8c8d8;
-    background: rgba(136, 184, 216, 0.15);
-    border-color: rgba(136, 184, 216, 0.25);
-}}
-
-/* ── Card ── */
-.card {{
-    background: rgba(255, 255, 255, 0.32);
-    backdrop-filter: blur(18px) saturate(1.5);
-    -webkit-backdrop-filter: blur(18px) saturate(1.5);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 18px;
-    padding: 20px 22px;
-    margin-bottom: 16px;
-    transition: all 0.35s ease;
-    animation: fadeInUp 0.6s ease both;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.03);
-}}
-.card::before {{
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 18px;
-    padding: 1px;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.6) 0%,
-        rgba(255, 255, 255, 0.1) 50%,
-        rgba(255, 255, 255, 0.4) 100%
-    );
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-}}
-.card::after {{
-    content: '';
-    position: absolute;
-    top: -25%; right: -15%;
-    width: 50%; height: 50%;
-    background: radial-gradient(
-        ellipse at center,
-        rgba(255, 255, 255, 0.12) 0%,
-        transparent 70%
-    );
-    pointer-events: none;
-}}
-.card:hover {{
-    border-color: rgba(211, 232, 183, 0.6);
-    transform: translateY(-3px);
-    box-shadow:
-        0 12px 40px rgba(0, 0, 0, 0.06),
-        0 0 0 1px rgba(255, 255, 255, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.4);
-}}
-body.dark .card {{
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
-}}
-body.dark .card::before {{
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.1) 0%,
-        rgba(255, 255, 255, 0.02) 50%,
-        rgba(255, 255, 255, 0.08) 100%
-    );
-}}
-body.dark .card:hover {{
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(136, 184, 216, 0.2);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-}}
-
-.card-header {{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; position: relative; z-index: 1; }}
-.time {{ font-size: 13px; color: rgba(45, 80, 24, 0.55); }}
-body.dark .time {{ color: rgba(221, 231, 243, 0.5); }}
-.action-tag {{
-    font-size: 13px; padding: 3px 10px; border-radius: 8px;
-    background: rgba(74, 122, 50, 0.08);
-    color: #4a7a32;
-    border: 1px solid rgba(74, 122, 50, 0.12);
-}}
-body.dark .action-tag {{
-    background: rgba(136, 184, 216, 0.08);
-    color: #88b8d8;
-    border-color: rgba(136, 184, 216, 0.12);
-}}
-.action-contact .action-tag {{
-    background: rgba(205, 231, 250, 0.3);
-    color: #3a6a8a;
-    border-color: rgba(205, 231, 250, 0.4);
-}}
-body.dark .action-contact .action-tag {{
-    background: rgba(205, 231, 250, 0.08);
-    color: #7ab8d8;
-    border-color: rgba(205, 231, 250, 0.12);
-}}
-.action-reflect .action-tag {{
-    background: rgba(255, 244, 182, 0.35);
-    color: #7a6a22;
-    border-color: rgba(255, 244, 182, 0.45);
-}}
-body.dark .action-reflect .action-tag {{
-    background: rgba(255, 244, 182, 0.08);
-    color: #d4c478;
-    border-color: rgba(255, 244, 182, 0.12);
-}}
-.action-rest .action-tag {{
-    background: rgba(58, 90, 40, 0.05);
-    color: rgba(58, 90, 40, 0.4);
-    border-color: rgba(58, 90, 40, 0.08);
-}}
-body.dark .action-rest .action-tag {{
-    background: rgba(184, 200, 216, 0.04);
-    color: rgba(184, 200, 216, 0.3);
-}}
-.location {{ font-size: 13px; color: #5a9a42; }}
-body.dark .location {{ color: #7aafcf; }}
-.badge {{ font-size: 12px; padding: 2px 8px; border-radius: 6px; }}
-.badge-tg {{
-    background: rgba(205, 231, 250, 0.2);
-    color: #3a7a9a;
-    border: 1px solid rgba(205, 231, 250, 0.3);
-}}
-body.dark .badge-tg {{
-    background: rgba(205, 231, 250, 0.06);
-    color: #6aafcf;
-    border-color: rgba(205, 231, 250, 0.1);
-}}
-.emotion {{ font-size: 14px; font-weight: 500; position: relative; z-index: 1; }}
-.card-title {{ font-size: 16px; color: #2d5018; margin-bottom: 8px; font-weight: 500; position: relative; z-index: 1; }}
-body.dark .card-title {{ color: #E8F0FA; }}
-.card-content {{ font-size: 16px; line-height: 1.8; color: rgba(30, 55, 20, 0.9); position: relative; z-index: 1; }}
-body.dark .card-content {{ color: rgba(221, 231, 243, 0.9); }}
-.tg-msg {{
-    margin-top: 14px; padding: 12px 16px;
-    background: rgba(205, 231, 250, 0.15);
-    border-left: 2px solid rgba(58, 122, 154, 0.3);
-    border-radius: 0 10px 10px 0;
-    font-size: 13px; color: #3a7a9a;
-    position: relative; z-index: 1;
-}}
-body.dark .tg-msg {{
-    background: rgba(205, 231, 250, 0.04);
-    border-left-color: rgba(106, 175, 207, 0.2);
-    color: #6aafcf;
-}}
-.empty {{
-    text-align: center; padding: 80px 20px;
-    color: rgba(45, 80, 24, 0.5); font-size: 17px; line-height: 2;
-    position: relative; z-index: 1;
-}}
-body.dark .empty {{ color: rgba(221, 231, 243, 0.5); }}
-.action-rest .card-content {{ color: rgba(58, 90, 40, 0.35); font-style: italic; }}
-body.dark .action-rest .card-content {{ color: rgba(184, 200, 216, 0.3); font-style: italic; }}
-</style>
-</head>
-<body>
-<button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
-<div class="container">
-    <div class="header glass">
-        <div class="heartbeat-icon">❤️</div>
-        <h1>{ai_name}的心跳日记</h1>
-        <p>这是{ai_name}独自在小屋的生活记录</p>
-        <div class="stats">共 {len(entries)} 条记录</div>
-        <a class="refresh" href="/heartbeat?token={token}">刷新</a>
-        <div class="tabs">
-            <button class="tab active" data-filter="all">全部</button>
-            <button class="tab" data-filter="contact">想念</button>
-            <button class="tab" data-filter="reflect">回忆</button>
-            <button class="tab" data-filter="hut_activity">小屋</button>
-            <button class="tab" data-filter="town_activity">小镇</button>
-            <button class="tab" data-filter="rest">安静</button>
-        </div>
-    </div>
-    {cards_html}
-</div>
-<script>
-document.querySelectorAll('.tab').forEach(function(btn) {{
-    btn.addEventListener('click', function() {{
-        document.querySelectorAll('.tab').forEach(function(b) {{ b.classList.remove('active'); }});
-        btn.classList.add('active');
-        var filter = btn.getAttribute('data-filter');
-        document.querySelectorAll('.card').forEach(function(card) {{
-            if (filter === 'all') {{ card.style.display = ''; }}
-            else {{ card.style.display = card.classList.contains('action-' + filter) ? '' : 'none'; }}
-        }});
-    }});
-}});
-function toggleTheme() {{
-    document.body.classList.toggle('dark');
-    var btn = document.getElementById('themeToggle');
-    if (document.body.classList.contains('dark')) {{
-        btn.textContent = '☀️';
-        localStorage.setItem('heartbeat-theme', 'dark');
-    }} else {{
-        btn.textContent = '🌙';
-        localStorage.setItem('heartbeat-theme', 'light');
-    }}
-}}
-(function() {{
-    if (localStorage.getItem('heartbeat-theme') === 'dark') {{
-        document.body.classList.add('dark');
-        document.getElementById('themeToggle').textContent = '☀️';
-    }}
-}})();
-</script>
-</body>
-</html>'''
-        return Response(content=html, media_type="text/html; charset=utf-8")
 
     async def handle_chat(self, request: Request) -> Response:
         auth_result = self._authorize(request.headers.get("Authorization", ""))
@@ -19671,6 +19113,11 @@ function toggleTheme() {{
             add_section("Date Recall", date_recall)
             add_section("Context Mode", f"context_mode: {context_mode}" if context_mode.strip() else "")
             add_section("照顾备忘", active_reminders)
+            try:
+                _shift_summary = today_shift_summary()
+            except Exception:
+                _shift_summary = ""
+            add_section("桥桥排班", _shift_summary)
             add_section("Memory Detail Request", memory_detail_recall_instruction)
             add_section(
                 "Memory Reading Policy",
@@ -23087,8 +22534,6 @@ def create_gateway_app(
     async def upstream_usage_debug(request: Request) -> Response:
         return await request.app.state.gateway_service.handle_upstream_usage_debug(request)
 
-    async def heartbeat_page(request: Request) -> Response:
-        return await request.app.state.gateway_service.handle_heartbeat_page(request)
 
     async def heartbeat_log_api(request: Request) -> Response:
         return await request.app.state.gateway_service.handle_heartbeat_log_api(request)
@@ -23108,10 +22553,322 @@ def create_gateway_app(
             Route("/v1/models", models, methods=["GET"]),
             Route("/v1/chat/completions", chat_completions, methods=["POST"]),
             Route("/v1/messages", anthropic_messages, methods=["POST"]),
-            Route("/heartbeat", heartbeat_page, methods=["GET"]),
             Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
             Route("/pages/{name}", serve_page, methods=["GET"]),
             Route("/pages-debug", lambda r: JSONResponse({"cwd": str(__import__('pathlib').Path.cwd()), "file": str(__import__('pathlib').Path(__file__).parent), "cwd_ls": [str(p) for p in __import__('pathlib').Path.cwd().iterdir()][:30], "pages_exists_cwd": (__import__('pathlib').Path.cwd() / "pages").is_dir(), "pages_exists_file": (__import__('pathlib').Path(__file__).parent / "pages").is_dir()}), methods=["GET"]),
+        ],
+        lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+    return app
+
+
+def main() -> None:
+    config = load_config()
+    setup_logging(config.get("log_level", "INFO"))
+    gateway_cfg = config.get("gateway", {})
+    app = create_gateway_app(config=config)
+    host = gateway_cfg.get("host", "0.0.0.0")
+    port = int(gateway_cfg.get("port", 8010))
+    logger.info("Ombre Brain gateway starting | host=%s port=%s", host, port)
+    uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == "__main__":
+    main()
+                   "detail": detail,
+                }
+            },
+        )
+
+    def _load_upstreams(self) -> list[dict[str, Any]]:
+        raw_upstreams = self.gateway_cfg.get("upstreams", [])
+        if isinstance(raw_upstreams, list) and raw_upstreams:
+            upstreams = []
+            for index, raw in enumerate(raw_upstreams, start=1):
+                if not isinstance(raw, dict):
+                    continue
+                name = str(raw.get("name") or f"upstream-{index}").strip() or f"upstream-{index}"
+                base_url = str(raw.get("base_url") or "").rstrip("/")
+                default_model = str(raw.get("default_model") or "").strip()
+                api_keys = self._api_key_entries_from_config(raw)
+                models, model_map = self._model_routes_from_config(
+                    raw.get("models", []),
+                    default_model,
+                )
+                protocol = self._normalize_upstream_protocol(
+                    raw.get("protocol") or raw.get("api_format") or raw.get("type")
+                )
+                prompt_cache = str(raw.get("prompt_cache") or "").strip().lower()
+                prompt_cache_retention = str(raw.get("prompt_cache_retention") or "").strip()
+                anthropic_version = str(raw.get("anthropic_version") or "2023-06-01").strip()
+                anthropic_beta = str(raw.get("anthropic_beta") or "").strip()
+                upstreams.append(
+                    {
+                        "name": name,
+                        "base_url": base_url,
+                        "protocol": protocol,
+                        "api_key": api_keys[0]["value"] if api_keys else "",
+                        "api_keys": api_keys,
+                        "default_model": default_model,
+                        "models": models,
+                        "model_map": model_map,
+                        "prompt_cache": prompt_cache,
+                        "prompt_cache_retention": prompt_cache_retention,
+                        "anthropic_version": anthropic_version,
+                        "anthropic_beta": anthropic_beta,
+                    }
+                )
+            if upstreams:
+                return upstreams
+
+        models, model_map = self._model_routes_from_config(
+            self.gateway_cfg.get("upstream_models", []),
+            self.upstream_default_model,
+        )
+        return [
+            {
+                "name": "default",
+                "base_url": self.upstream_base_url,
+                "protocol": self._normalize_upstream_protocol(self.gateway_cfg.get("upstream_protocol")),
+                "api_key": self.upstream_api_key,
+                "api_keys": self._api_key_entries_from_config(
+                    self.gateway_cfg,
+                    fallback_api_key=self.upstream_api_key,
+                ),
+                "default_model": self.upstream_default_model,
+                "models": models,
+                "model_map": model_map,
+                "prompt_cache": str(self.gateway_cfg.get("prompt_cache") or "").strip().lower(),
+                "prompt_cache_retention": str(
+                    self.gateway_cfg.get("prompt_cache_retention") or ""
+                ).strip(),
+                "anthropic_version": str(
+                    self.gateway_cfg.get("anthropic_version") or "2023-06-01"
+                ).strip(),
+                "anthropic_beta": str(self.gateway_cfg.get("anthropic_beta") or "").strip(),
+            }
+        ]
+
+    def _aggregate_upstream_models(self) -> list[str]:
+        models = []
+        for upstream in self.upstreams:
+            for model in upstream.get("models", []):
+                if not model:
+                    continue
+                if model in models:
+                    logger.warning(
+                        'Duplicate gateway model "%s" found in upstream "%s"; first match wins',
+                        model,
+                        upstream.get("name", "unknown"),
+                    )
+                    continue
+                models.append(model)
+        return models
+
+    def _refresh_upstream_model_summary(self) -> None:
+        self.upstream_models = self._aggregate_upstream_models()
+        configured_default = str(self.gateway_cfg.get("upstream_default_model") or "").strip()
+        if configured_default and configured_default in self.upstream_models:
+            self.upstream_default_model = configured_default
+            return
+        for upstream in self.upstreams:
+            default_model = str(upstream.get("default_model") or "").strip()
+            if default_model:
+                self.upstream_default_model = default_model
+                return
+        self.upstream_default_model = self.upstream_models[0] if self.upstream_models else configured_default
+
+    def _resolve_upstream_for_model(self, model: str) -> dict[str, Any]:
+        if not self.upstreams:
+            raise RuntimeError("gateway upstream is not configured")
+
+        normalized_model = str(model or "").strip()
+        if len(self.upstreams) == 1:
+            upstream = self.upstreams[0]
+            if not normalized_model:
+                upstream_models = upstream.get("models", []) or []
+                normalized_model = str(
+                    upstream.get("default_model")
+                    or (upstream_models[0] if upstream_models else "")
+                    or self.upstream_default_model
+                ).strip()
+            model_map = upstream.get("model_map", {})
+            upstream_model = model_map.get(normalized_model, normalized_model)
+        else:
+            if not normalized_model:
+                raise ValueError("model is required when gateway has multiple upstreams")
+            upstream = next(
+                (
+                    candidate
+                    for candidate in self.upstreams
+                    if normalized_model in candidate.get("model_map", {})
+                ),
+                None,
+            )
+            if upstream is None:
+                raise ValueError(f'model "{normalized_model}" is not configured in gateway.upstreams')
+            upstream_model = upstream.get("model_map", {}).get(normalized_model, normalized_model)
+
+        if not upstream.get("base_url"):
+            raise RuntimeError(f'gateway upstream "{upstream["name"]}" base_url is not configured')
+        if not upstream.get("api_keys"):
+            raise RuntimeError(f'gateway upstream "{upstream["name"]}" api_key is not configured')
+        return {
+            "upstream": upstream,
+            "public_model": normalized_model,
+            "upstream_model": upstream_model,
+        }
+
+    def _get_upstream_for_model(self, model: str) -> dict[str, Any]:
+        return self._resolve_upstream_for_model(model)["upstream"]
+
+    def _normalize_model_list(self, raw_models: Any, default_model: str) -> list[str]:
+        if isinstance(raw_models, str):
+            candidates = [item.strip() for item in raw_models.split(",")]
+        elif isinstance(raw_models, list):
+            candidates = [str(item).strip() for item in raw_models]
+        else:
+            candidates = []
+
+        models = []
+        for model in candidates:
+            if model and model not in models:
+                models.append(model)
+
+        if default_model and default_model not in models:
+            models.insert(0, default_model)
+        return models
+
+
+def create_gateway_app(
+    config: dict | None = None,
+    service: GatewayService | None = None,
+) -> Starlette:
+    config = config or load_config()
+    service = service or GatewayService(config)
+
+    @asynccontextmanager
+    async def lifespan(app: Starlette):
+        app.state.gateway_service = service
+        await service.warm_recall_runtime()
+        if service.heartbeat_enabled:
+            service._start_heartbeat()
+        if service.telegram_bot_enabled:
+            service._start_telegram_bot()
+        yield
+        await service.close()
+
+    async def health(request: Request) -> JSONResponse:
+        return await request.app.state.gateway_service.handle_health(request)
+
+    async def chat_completions(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_chat(request)
+
+    async def anthropic_messages(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_anthropic_messages(request)
+
+    async def models(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_models(request)
+
+    async def config_route(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_config(request)
+
+    async def injection_debug(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_injection_debug(request)
+
+    async def hook_recall(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_hook_recall(request)
+
+    async def recall_eval_debug(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_recall_eval_debug(request)
+
+    async def upstream_usage_debug(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_upstream_usage_debug(request)
+
+    async def heartbeat_page(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_heartbeat_page(request)
+
+    async def heartbeat_log_api(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_heartbeat_log_api(request)
+
+    app = Starlette(
+        debug=False,
+        routes=[
+            Route("/health", health, methods=["GET"]),
+            Route("/api/config", config_route, methods=["GET", "POST"]),
+            Route("/api/debug/injections", injection_debug, methods=["GET"]),
+            Route("/api/hook/recall", hook_recall, methods=["POST"]),
+            Route("/api/debug/recall-eval", recall_eval_debug, methods=["GET"]),
+            Route("/api/debug/upstream-usage", upstream_usage_debug, methods=["GET"]),
+            Route("/v1/models", models, methods=["GET"]),
+            Route("/v1/chat/completions", chat_completions, methods=["POST"]),
+            Route("/v1/messages", anthropic_messages, methods=["POST"]),
+            Route("/heartbeat", heartbeat_page, methods=["GET"]),
+            Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
+        ],
+        lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+    return app
+
+
+def main() -> None:
+    config = load_config()
+    setup_logging(config.get("log_level", "INFO"))
+    gateway_cfg = config.get("gateway", {})
+    app = create_gateway_app(config=config)
+    host = gateway_cfg.get("host", "0.0.0.0")
+    port = int(gateway_cfg.get("port", 8010))
+    logger.info("Ombre Brain gateway starting | host=%s port=%s", host, port)
+    uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == "__main__":
+    main()
+
+        Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
+        ],
+        lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
+    return app
+
+
+def main() -> None:
+    config = load_config()
+    setup_logging(config.get("log_level", "INFO"))
+    gateway_cfg = config.get("gateway", {})
+    app = create_gateway_app(config=config)
+    host = gateway_cfg.get("host", "0.0.0.0")
+    port = int(gateway_cfg.get("port", 8010))
+    logger.info("Ombre Brain gateway starting | host=%s port=%s", host, port)
+    uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == "__main__":
+    main()
+        Route("/v1/messages", anthropic_messages, methods=["POST"]),
+            Route("/heartbeat", heartbeat_page, methods=["GET"]),
+            Route("/api/heartbeat-log", heartbeat_log_api, methods=["GET"]),
         ],
         lifespan=lifespan,
     )

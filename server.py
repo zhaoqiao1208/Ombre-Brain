@@ -126,6 +126,7 @@ from reflection_engine import ReflectionEngine
 from recall_diagnostics import RecallDiagnosticsLogger
 from reminder_store import ReminderStore
 from reranker_engine import RerankerEngine
+from work_shift import shift_for_date, shift_range, today_shift_summary
 from self_anchor import SELF_ANCHOR_TAG, is_self_anchor_bucket, is_self_anchor_metadata
 from scripts.migrate_affect_anchor_sections import plan_bucket_migration
 from source_refs import source_ref_window
@@ -9024,6 +9025,49 @@ async def pulse(include_archive: bool = False) -> str:
 # =============================================================
 # Tool 6: introspection — waking self-reflection over recent memories
 # 工具 6：introspection — 清醒自省，消化最近的记忆
+# =============================================================
+# Tool: work_shift — 桥桥排班查询
+# 固定三天周期（早晚晚），纯计算，不存数据。
+# =============================================================
+@mcp.tool()
+async def work_shift(
+    date: str = "",
+    days: int = 0,
+) -> str:
+    """查询桥桥的排班。不传参数返回今天+明天；传 date 查指定日期；传 days 查从 date 起连续多天。日期格式 YYYY-MM-DD。"""
+    from datetime import date as _date_type
+    try:
+        if not str(date or "").strip() and days <= 0:
+            return today_shift_summary()
+
+        if str(date or "").strip():
+            try:
+                target = _date_type.fromisoformat(str(date).strip())
+            except ValueError:
+                return '日期格式没看懂，请用 YYYY-MM-DD，比如 work_shift(date="2026-09-01")。'
+        else:
+            target = datetime.now(LOCAL_TZ).date()
+
+        if days > 0:
+            days = min(days, 90)
+            results = shift_range(target, days)
+            weekday_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+            lines = []
+            for r in results:
+                d = _date_type.fromisoformat(r["date"])
+                wd = weekday_names[d.weekday()]
+                lines.append(f"{r['date']}（{wd}）{r['shift']} {r['start']}–{r['end']}")
+            return "桥桥排班：\n" + "\n".join(lines)
+
+        info = shift_for_date(target)
+        weekday_names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+        wd = weekday_names[target.weekday()]
+        return f"{info['date']}（{wd}）桥桥{info['shift']} {info['start']}–{info['end']}"
+    except Exception as exc:
+        logger.error("work_shift tool error: %s", exc, exc_info=True)
+        return f"排班查询出错了：{exc}"
+
+
 #
 # Reads recent surface-level buckets (≤10), returns them for
 # Claude to introspect under prompt guidance.
