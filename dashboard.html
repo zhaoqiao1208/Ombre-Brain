@@ -4245,6 +4245,8 @@ document.querySelectorAll('.tab').forEach(tab => {
       return;
     }
     document.getElementById('import-view').style.display = target === 'import' ? '' : 'none';
+    document.getElementById('work-shift-view').style.display = target === 'work-shift' ? '' : 'none';
+    if (target === 'work-shift') loadShiftToday();
     if (target === 'todos') loadTodos();
     if (target === 'breath') loadGatewayInjections();
     if (target === 'memory-config') loadConfig();
@@ -9344,6 +9346,71 @@ function loadDashboardModule(path) {
 }
 
 loadDashboardModule('/dashboard-assets/chat-memory.js?v=20260706-chat-memory-edit');
+
+// ---- Work Shift ----
+var SHIFT_ANCHOR_DATE = new Date(2026, 7, 30); // 2026-08-30, month is 0-indexed
+var SHIFT_ANCHOR_INDEX = 2; // 晚班
+var SHIFT_NAMES = ['早班', '晚班', '晚班'];
+var SHIFT_TIMES = { '早班': '06:45 – 14:30', '晚班': '14:00 – 21:30' };
+var SHIFT_EMOJI = { '早班': '🌅', '晚班': '🌙' };
+
+function shiftForDate(dateObj) {
+  var anchor = new Date(SHIFT_ANCHOR_DATE.getFullYear(), SHIFT_ANCHOR_DATE.getMonth(), SHIFT_ANCHOR_DATE.getDate());
+  var target = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+  var diffDays = Math.round((target - anchor) / 86400000);
+  var index = ((diffDays % 3) + 3 + SHIFT_ANCHOR_INDEX) % 3;
+  var name = SHIFT_NAMES[index];
+  return { name: name, time: SHIFT_TIMES[name] || '', emoji: SHIFT_EMOJI[name] || '' };
+}
+
+function formatShiftDate(d) {
+  var weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day + ' 周' + weekdays[d.getDay()];
+}
+
+function loadShiftToday() {
+  var el = document.getElementById('shift-today');
+  if (!el) return;
+  var now = new Date();
+  var shift = shiftForDate(now);
+  el.innerHTML = '<div style="font-size:18px;font-weight:600;color:var(--accent);margin-bottom:6px;">' +
+    shift.emoji + ' 今天 ' + esc(formatShiftDate(now)) + ' — ' + esc(shift.name) + '</div>' +
+    '<div style="color:var(--text-dim);">' + esc(shift.time) + '</div>';
+  var dateInput = document.getElementById('shift-query-date');
+  if (dateInput && !dateInput.value) {
+    dateInput.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  }
+}
+
+function queryShiftRange() {
+  var dateInput = document.getElementById('shift-query-date');
+  var daysInput = document.getElementById('shift-query-days');
+  var resultDiv = document.getElementById('shift-range-result');
+  var listDiv = document.getElementById('shift-range-list');
+  if (!dateInput || !daysInput || !resultDiv || !listDiv) return;
+  var startDate = dateInput.value ? new Date(dateInput.value + 'T00:00:00') : new Date();
+  var days = Math.max(1, Math.min(90, parseInt(daysInput.value, 10) || 7));
+  var lines = [];
+  for (var i = 0; i < days; i++) {
+    var d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    var shift = shiftForDate(d);
+    var today = new Date();
+    var isToday = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+    var style = isToday ? 'font-weight:600;color:var(--accent);' : '';
+    lines.push('<div style="display:flex;gap:12px;align-items:center;padding:4px 0;' + style + '">' +
+      '<span style="min-width:160px;">' + esc(formatShiftDate(d)) + '</span>' +
+      '<span>' + shift.emoji + ' ' + esc(shift.name) + '</span>' +
+      '<span style="color:var(--text-light);font-size:12px;">' + esc(shift.time) + '</span>' +
+      (isToday ? '<span style="font-size:11px;background:var(--accent);color:#F0EDE4;padding:2px 8px;border-radius:999px;">今天</span>' : '') +
+    '</div>');
+  }
+  listDiv.innerHTML = lines.join('');
+  resultDiv.style.display = '';
+}
 </script>
 <script>
 function toggleDashTheme() {
