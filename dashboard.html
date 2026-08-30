@@ -2974,6 +2974,7 @@
   <div class="tab" data-tab="memory-config">记忆浮现</div>
   <div class="tab" data-tab="import">导入</div>
   <div class="tab" data-tab="heartbeat-house">记忆小屋</div>
+  <div class="tab" data-tab="work-shift">排班</div>
 </div>
 
 <div class="content" id="list-view">
@@ -3637,6 +3638,24 @@
   <div class="network-stage">
     <canvas id="network-canvas"></canvas>
     <div id="network-popover" class="network-popover" hidden></div>
+  </div>
+</div>
+
+<div class="content" id="work-shift-view" style="display:none">
+  <div style="max-width:760px;margin:0 auto;">
+    <h2 style="font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--accent);margin-bottom:4px;">排班</h2>
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px;">固定三天周期：早班、晚班、晚班。点击查询任意日期或范围。</p>
+    <div id="shift-today" style="padding:18px 22px;background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:20px;font-size:15px;line-height:1.8;box-shadow:4px 4px 10px var(--shadow-dark-subtle),-4px -4px 10px var(--shadow-light);"></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+      <label style="font-size:12px;color:var(--text-dim);">查询日期</label>
+      <input type="date" id="shift-query-date" style="padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-solid);color:var(--text);font-size:13px;" />
+      <label style="font-size:12px;color:var(--text-dim);">天数</label>
+      <input type="number" id="shift-query-days" min="1" max="90" value="7" style="width:60px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-solid);color:var(--text);font-size:13px;" />
+      <button onclick="queryShiftRange()" class="btn-secondary" style="padding:10px 20px;">查询</button>
+    </div>
+    <div id="shift-range-result" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 22px;box-shadow:4px 4px 10px var(--shadow-dark-subtle),-4px -4px 10px var(--shadow-light);">
+      <div id="shift-range-list" style="font-size:13px;line-height:2;"></div>
+    </div>
   </div>
 </div>
 
