@@ -39,6 +39,8 @@
   --tg-border: rgba(178,154,199,0.3);
   --tg-text: #6a5a7e;
   --dot: #9EA88A;
+  --delete-bg: rgba(200,100,100,0.12);
+  --delete-text: #b06060;
 }
 [data-theme="ink"] {
   --bg: #e5ebe8;
@@ -72,6 +74,8 @@
   --tg-border: rgba(174,204,230,0.35);
   --tg-text: #4a6a8a;
   --dot: #aecce6;
+  --delete-bg: rgba(180,100,100,0.12);
+  --delete-text: #a06060;
 }
 [data-theme="mint"] {
   --bg: #e8ebe9;
@@ -105,6 +109,8 @@
   --tg-border: rgba(74,54,41,0.2);
   --tg-text: #5a4639;
   --dot: #A3C0B7;
+  --delete-bg: rgba(160,80,80,0.12);
+  --delete-text: #905050;
 }
 body {
   background: var(--bg);
@@ -155,7 +161,7 @@ body {
   border-radius: 18px; padding: 18px 20px;
   position: relative; overflow: hidden;
   box-shadow: 0 2px 16px rgba(0,0,0,0.04), inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 rgba(0,0,0,0.02);
-  transition: transform 0.2s;
+  transition: transform 0.2s, opacity 0.3s;
 }
 .card::before {
   content: ''; position: absolute; top: -40%; left: -20%; width: 70%; height: 60%;
@@ -178,6 +184,13 @@ body {
 .card-tg { margin-top: 12px; padding: 12px 16px; background: var(--tg-bg); border-left: 2px solid var(--tg-border); border-radius: 0 12px 12px 0; position: relative; z-index: 1; }
 .card-tg-label { font-size: 11px; color: var(--text-light); margin-bottom: 4px; }
 .card-tg-text { font-size: 14px; line-height: 1.7; color: var(--tg-text); }
+.card-actions { display: flex; justify-content: flex-end; margin-top: 10px; position: relative; z-index: 1; }
+.btn-delete {
+  font-size: 11px; padding: 4px 12px; border-radius: 8px; border: none;
+  background: var(--delete-bg); color: var(--delete-text);
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.btn-delete:active { transform: scale(0.95); opacity: 0.7; }
 .card.action-contact .card-room { background: var(--tag-contact); color: var(--tag-contact-text); }
 .card.action-reflect .card-room { background: var(--tag-reflect); color: var(--tag-reflect-text); }
 .card.action-rest .card-room { background: var(--tag-rest); color: var(--tag-rest-text); }
@@ -225,6 +238,15 @@ var TOKEN = new URLSearchParams(location.search).get('token') || '';
 var allEntries = [];
 var ACTION_LABELS = { hut_activity: '小屋活动', town_activity: '小镇活动', contact: '想念', reflect: '回忆', rest: '安静' };
 function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function deleteEntry(time) {
+  if (!confirm('确定要删除这条记录吗？')) return;
+  var url = '/api/heartbeat-log/delete';
+  if (TOKEN) url += '?token=' + encodeURIComponent(TOKEN);
+  fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time: time }) })
+    .then(function(r) { if (!r.ok) throw new Error('delete failed'); return r.json(); })
+    .then(function() { loadData(); })
+    .catch(function(e) { alert('删除失败: ' + e.message); });
+}
 function renderCards(entries) {
   var box = document.getElementById('cards');
   if (!entries || entries.length === 0) { box.innerHTML = '<div class="empty">还没有心跳活动记录。<br>等他醒来第一次活动后，就会出现在这里。</div>'; return; }
@@ -233,14 +255,14 @@ function renderCards(entries) {
     var e = entries[i], action = e.action || 'rest', location = e.location || '', content = e.content || '', time = e.time || '', sent = e.sent_telegram, tgMsg = e.telegram_message || '', label = ACTION_LABELS[action] || action;
     var tgHtml = (sent && tgMsg) ? '<div class="card-tg"><div class="card-tg-label">发给桥桥的消息</div><div class="card-tg-text">' + esc(tgMsg) + '</div></div>' : '';
     var statusText = sent ? '已发消息' : label;
-    h += '<div class="card action-' + esc(action) + '" data-location="' + esc(location) + '"><div class="card-top"><span class="card-dot"></span><span class="card-room">' + esc(location || '小屋') + '</span><span class="card-status">' + esc(statusText) + '</span><span class="card-time">' + esc(time) + '</span></div><div class="card-content">' + esc(content) + '</div>' + tgHtml + '</div>';
+    h += '<div class="card action-' + esc(action) + '" data-location="' + esc(location) + '"><div class="card-top"><span class="card-dot"></span><span class="card-room">' + esc(location || '小屋') + '</span><span class="card-status">' + esc(statusText) + '</span><span class="card-time">' + esc(time) + '</span></div><div class="card-content">' + esc(content) + '</div>' + tgHtml + '<div class="card-actions"><button class="btn-delete" onclick="deleteEntry(\'' + esc(time).replace(/'/g, "\\'") + '\')">\u5220\u9664</button></div></div>';
   }
   box.innerHTML = h;
 }
 function filterCards(f) { if (f === 'all') { renderCards(allEntries); return; } var loc = f.replace('loc-', ''); renderCards(allEntries.filter(function(e) { return e.location === loc; })); }
 function loadData() {
   var url = '/api/heartbeat-log?limit=200'; if (TOKEN) url += '&token=' + encodeURIComponent(TOKEN);
-  fetch(url).then(function(r) { if (!r.ok) throw new Error('API error ' + r.status); return r.json(); }).then(function(data) { allEntries = data.entries || []; renderCards(allEntries); }).catch(function(err) { document.getElementById('cards').innerHTML = '<div class="empty">加载失败：' + esc(err.message) + '</div>'; });
+  fetch(url).then(function(r) { if (!r.ok) throw new Error('API error ' + r.status); return r.json(); }).then(function(data) { allEntries = data.entries || []; var active = document.querySelector('.tab.active'); var f = active ? active.getAttribute('data-filter') : 'all'; filterCards(f); }).catch(function(err) { document.getElementById('cards').innerHTML = '<div class="empty">加载失败：' + esc(err.message) + '</div>'; });
 }
 document.getElementById('tabs').addEventListener('click', function(ev) { var btn = ev.target.closest('.tab'); if (!btn) return; document.querySelectorAll('.tab').forEach(function(b) { b.classList.remove('active'); }); btn.classList.add('active'); filterCards(btn.getAttribute('data-filter')); });
 var THEMES = ['bamboo', 'ink', 'mint'];
