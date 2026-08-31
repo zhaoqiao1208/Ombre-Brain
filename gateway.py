@@ -2061,6 +2061,35 @@ class GatewayService:
         entries = self._load_heartbeat_log(limit=limit)
         return JSONResponse({"entries": entries, "count": len(entries)})
 
+    async def handle_heartbeat_log_delete(self, request: Request) -> JSONResponse:
+        """Delete a heartbeat log entry by time."""
+        denied = self._check_heartbeat_access(request)
+        if denied:
+            return denied
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse({"error": "invalid json"}, status_code=400)
+        target_time = body.get("time", "")
+        if not target_time:
+            return JSONResponse({"error": "missing time field"}, status_code=400)
+        try:
+            path = self._heartbeat_log_path()
+            if not os.path.exists(path):
+                return JSONResponse({"error": "log file not found"}, status_code=404)
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.loads(f.read().strip() or "[]")
+            original_len = len(data)
+            data = [e for e in data if e.get("time") != target_time]
+            if len(data) == original_len:
+                return JSONResponse({"error": "entry not found"}, status_code=404)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            return JSONResponse({"ok": True, "deleted": target_time, "remaining": len(data)})
+        except Exception as exc:
+            logger.warning("Heartbeat log delete failed | error=%s", exc)
+            return JSONResponse({"error": str(exc)}, status_code=500)
+
     async def handle_serve_page(self, request: Request) -> Response:
         """Serve static HTML pages from the pages/ directory."""
         denied = self._check_heartbeat_access(request)
