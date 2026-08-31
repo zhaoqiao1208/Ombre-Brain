@@ -22570,6 +22570,9 @@ def create_gateway_app(
     async def serve_page(request: Request) -> Response:
         return await request.app.state.gateway_service.handle_serve_page(request)
 
+    async def heartbeat_log_delete(request: Request) -> Response:
+        return await request.app.state.gateway_service.handle_heartbeat_log_delete(request)
+
     app = Starlette(
         debug=False,
         routes=[
