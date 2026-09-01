@@ -2122,6 +2122,7 @@ class GatewayService:
     def _compute_shift(self, date_str: str, overrides: dict) -> str:
         if date_str in overrides:
             return overrides[date_str]
+        from datetime import date, timedelta as _td
         anchor = date(2026, 8, 31)
         parts = date_str.split("-")
         try:
