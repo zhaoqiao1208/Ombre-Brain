@@ -5024,6 +5024,28 @@ class GatewayService:
             return False
 
     @staticmethod
+    async def _download_telegram_photo(self, file_id: str) -> str | None:
+        try:
+            import base64
+            bot_token = self.heartbeat_telegram_bot_token
+            base_url = f"https://api.telegram.org/bot{bot_token}"
+            resp = await self.http_client.post(
+                f"{base_url}/getFile", json={"file_id": file_id}, timeout=15.0
+            )
+            if resp.status_code != 200:
+                return None
+            file_path = resp.json().get("result", {}).get("file_path", "")
+            if not file_path:
+                return None
+            dl_url = f"https://api.telegram.org/file/bot{bot_token}/{file_path}"
+            dl_resp = await self.http_client.get(dl_url, timeout=30.0)
+            if dl_resp.status_code != 200:
+                return None
+            return base64.b64encode(dl_resp.content).decode("ascii")
+        except Exception as exc:
+            logger.warning("Telegram photo download failed | error=%s", exc)
+            return None
+
     def _split_telegram_reply(text: str) -> list[str]:
         """Split a long reply into chat bubbles by blank lines, like real messaging."""
         raw = str(text or "").strip()
