@@ -22656,10 +22656,10 @@ def create_gateway_app(
         return await request.app.state.gateway_service.handle_heartbeat_log_api(request)
 
     async def schedule_api(request: Request) -> JSONResponse:
-        return await gateway_service.handle_schedule_api(request)
+        return await request.app.state.gateway_service.handle_schedule_api(request)
 
     async def schedule_save(request: Request) -> JSONResponse:
-        return await gateway_service.handle_schedule_save(request)
+        return await request.app.state.gateway_service.handle_schedule_save(request)
 
     async def serve_page(request: Request) -> Response:
         return await request.app.state.gateway_service.handle_serve_page(request)
