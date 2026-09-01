@@ -5156,7 +5156,7 @@ class GatewayService:
                             continue
                         continue
                     logger.info("Telegram message received | chat_id=%s text=%.50s", msg_chat_id, text)
-                    asyncio.create_task(self._handle_telegram_chat(msg_chat_id, text))
+                    asyncio.create_task(self._handle_telegram_chat(msg_chat_id, text, photo_base64=photo_base64))
             except asyncio.CancelledError:
                 logger.info("Telegram bot loop cancelled")
                 break
