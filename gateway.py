@@ -5046,6 +5046,7 @@ class GatewayService:
             logger.warning("Telegram photo download failed | error=%s", exc)
             return None
 
+    @staticmethod
     def _split_telegram_reply(text: str) -> list[str]:
         """Split a long reply into chat bubbles by blank lines, like real messaging."""
         raw = str(text or "").strip()
