@@ -19143,6 +19143,58 @@ class GatewayService:
             status,
         )
 
+    def _cross_platform_activity_path(self) -> str:
+        state_dir = self.config.get("state_dir") or os.path.join(
+            self.config.get("buckets_dir", "."), "state"
+        )
+        os.makedirs(state_dir, exist_ok=True)
+        return os.path.join(state_dir, "cross_platform_activity.json")
+
+    def _update_cross_platform_activity(self, client: str, user_msg: str) -> None:
+        try:
+            from datetime import datetime, timezone
+            snippet = user_msg[:80].replace("\n", " ").strip()
+            data = {
+                "client": client or "unknown",
+                "time": datetime.now(timezone.utc).isoformat(),
+                "snippet": snippet,
+            }
+            with open(self._cross_platform_activity_path(), "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False)
+        except Exception:
+            pass
+
+    def _build_cross_platform_hint(self, current_client: str) -> str:
+        try:
+            from datetime import datetime, timezone
+            path = self._cross_platform_activity_path()
+            if not os.path.exists(path):
+                return ""
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.loads(f.read().strip() or "{}")
+            last_client = data.get("client", "")
+            if not last_client or last_client == current_client:
+                return ""
+            last_time_str = data.get("time", "")
+            snippet = data.get("snippet", "")
+            if not last_time_str:
+                return ""
+            last_time = datetime.fromisoformat(last_time_str)
+            now = datetime.now(timezone.utc)
+            diff_min = int((now - last_time).total_seconds() / 60)
+            if diff_min > 360:
+                return ""
+            if diff_min < 1:
+                ago = "just now"
+            elif diff_min < 60:
+                ago = f"{diff_min}min ago"
+            else:
+                ago = f"{diff_min // 60}h{diff_min % 60}min ago"
+            hint = f"Cross-platform note: {ago} on [{last_client}], last message: \"{snippet}\""
+            return hint
+        except Exception:
+            return ""
+
     def _build_work_shift_hint(self) -> str:
         from datetime import date, timedelta
         try:
