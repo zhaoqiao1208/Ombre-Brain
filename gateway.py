@@ -2145,6 +2145,7 @@ class GatewayService:
         saved = self._load_schedule_overrides()
         overrides = saved.get("overrides", {})
         specials = saved.get("specials", [])
+        from datetime import date, timedelta
         today = date.today()
         days = []
         for i in range(days_count):
