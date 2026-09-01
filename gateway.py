@@ -5134,8 +5134,14 @@ class GatewayService:
                             msg_chat_id, allowed_chat_id,
                         )
                         continue
-                    text = str(message.get("text", "")).strip()
-                    if not text:
+                    text = str(message.get("text", "") or message.get("caption", "") or "").strip()
+                    photo_list = message.get("photo")
+                    photo_base64 = None
+                    if photo_list and isinstance(photo_list, list):
+                        file_id = photo_list[-1].get("file_id", "")
+                        if file_id:
+                            photo_base64 = await self._download_telegram_photo(file_id)
+                    if not text and not photo_base64:
                         continue
                     if text.startswith("/"):
                         if text == "/clear" or text == "/reset":
