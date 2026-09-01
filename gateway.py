@@ -5166,12 +5166,22 @@ class GatewayService:
                 logger.warning("Telegram bot loop error | error=%s", exc)
                 await asyncio.sleep(5)
 
-    async def _handle_telegram_chat(self, chat_id: str, user_text: str) -> None:
+    async def _handle_telegram_chat(self, chat_id: str, user_text: str, *, photo_base64: str | None = None) -> None:
         """Process a Telegram message: inject memories, call LLM, send reply."""
         try:
             session_id = f"telegram_{chat_id}"
             history = self._telegram_chat_histories.setdefault(chat_id, [])
-            history.append({"role": "user", "content": user_text})
+            if photo_base64:
+                content_parts = []
+                if user_text:
+                    content_parts.append({"type": "text", "text": user_text})
+                content_parts.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{photo_base64}"}
+                })
+                history.append({"role": "user", "content": content_parts})
+            else:
+                history.append({"role": "user", "content": user_text})
             self._update_cross_platform_activity("telegram", user_text)
             if len(history) > self._telegram_chat_max_history * 2:
                 history[:] = history[-(self._telegram_chat_max_history * 2):]
