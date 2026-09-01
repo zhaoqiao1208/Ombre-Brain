@@ -2245,7 +2245,7 @@ class GatewayService:
                 request.headers.get("X-Ombre-Include-Favorite-Memory")
             )
             persona_user_message = self._extract_last_user_query(payload.get("messages", []))
-            self._update_cross_platform_activity(client_label, user_message)
+            self._update_cross_platform_activity(client_label, persona_user_message)
             forward_payload, recalled_ids, injection_debug = await self.prepare_payload(
                 payload,
                 session_id,
