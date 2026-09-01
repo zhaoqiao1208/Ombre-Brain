@@ -2142,17 +2142,22 @@ class GatewayService:
         except ValueError:
             days_count = 7
         days_count = max(1, min(30, days_count))
-        saved = self._load_schedule_overrides()
-        overrides = saved.get("overrides", {})
-        specials = saved.get("specials", [])
-        from datetime import date, timedelta
-        today = date.today()
-        days = []
-        for i in range(days_count):
-            d = today + timedelta(days=i)
-            ds = d.strftime("%Y-%m-%d")
-            days.append({"date": ds, "shift": self._compute_shift(ds, overrides)})
-        return JSONResponse({"days": days, "overrides": overrides, "specials": specials})
+        try:
+            saved = self._load_schedule_overrides()
+            overrides = saved.get("overrides", {})
+            specials = saved.get("specials", [])
+            from datetime import date, timedelta
+            today = date.today()
+            days = []
+            for i in range(days_count):
+                d = today + timedelta(days=i)
+                ds = d.strftime("%Y-%m-%d")
+                days.append({"date": ds, "shift": self._compute_shift(ds, overrides)})
+            return JSONResponse({"days": days, "overrides": overrides, "specials": specials})
+        except Exception as exc:
+            import traceback
+            logger.warning("Schedule API error | error=%s", traceback.format_exc())
+            return JSONResponse({"error": str(exc), "trace": traceback.format_exc()}, status_code=500)
 
     async def handle_schedule_save(self, request: Request) -> JSONResponse:
         denied = self._check_heartbeat_access(request)
