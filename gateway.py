@@ -5023,7 +5023,6 @@ class GatewayService:
             logger.warning("Isle activity write error | error=%s", exc)
             return False
 
-    @staticmethod
     async def _download_telegram_photo(self, file_id: str) -> str | None:
         try:
             import base64
