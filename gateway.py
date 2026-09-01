@@ -19143,6 +19143,24 @@ class GatewayService:
             status,
         )
 
+    def _build_work_shift_hint(self) -> str:
+        from datetime import date, timedelta
+        try:
+            today = date.today()
+            saved = self._load_schedule_overrides()
+            overrides = saved.get("overrides", {})
+            labels = {"early": "early 06:45-14:30", "late": "late 14:00-21:30", "off": "off"}
+            parts = []
+            for i in range(2):
+                d = today + timedelta(days=i)
+                ds = d.strftime("%Y-%m-%d")
+                shift = self._compute_shift(ds, overrides)
+                day_label = "today" if i == 0 else "tomorrow"
+                parts.append(f"{day_label}({ds}): {labels.get(shift, shift)}")
+            return "Work schedule (auto-computed, early-late-late cycle): " + ", ".join(parts)
+        except Exception:
+            return ""
+
     def _build_injected_context_messages(
         self,
         persona_block: str,
