@@ -4244,6 +4244,18 @@ document.querySelectorAll('.tab').forEach(tab => {
       window.open(gwBase + '/pages/heartbeat-house?token=' + encodeURIComponent(hbToken), '_blank');
       return;
     }
+    if (target === 'work-shift') {
+      var wsToken = localStorage.getItem('hb-house-token') || '';
+      if (!wsToken) {
+        wsToken = prompt('输入 Gateway Token：');
+        if (wsToken) localStorage.setItem('hb-house-token', wsToken);
+        else return;
+      }
+      var gwHost2 = location.hostname.replace(/^([^.]+)\./, 'gateway-$1.');
+      var gwBase2 = location.protocol + '//' + gwHost2;
+      window.open(gwBase2 + '/pages/schedule?token=' + encodeURIComponent(wsToken), '_blank');
+      return;
+    }
     document.getElementById('import-view').style.display = target === 'import' ? '' : 'none';
     document.getElementById('work-shift-view').style.display = target === 'work-shift' ? '' : 'none';
     if (target === 'work-shift') loadShiftToday();
