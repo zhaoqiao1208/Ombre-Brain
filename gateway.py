@@ -2090,6 +2090,87 @@ class GatewayService:
             logger.warning("Heartbeat log delete failed | error=%s", exc)
             return JSONResponse({"error": str(exc)}, status_code=500)
 
+    # ----------------------------------------------------------------
+    # Schedule API
+    # ----------------------------------------------------------------
+
+    def _schedule_overrides_path(self) -> str:
+        state_dir = self.config.get("state_dir") or os.path.join(
+            self.config.get("buckets_dir", "."), "state"
+        )
+        os.makedirs(state_dir, exist_ok=True)
+        return os.path.join(state_dir, "schedule_overrides.json")
+
+    def _load_schedule_overrides(self) -> dict:
+        path = self._schedule_overrides_path()
+        if not os.path.exists(path):
+            return {"overrides": {}, "specials": []}
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.loads(f.read().strip() or "{}")
+            if not isinstance(data, dict):
+                return {"overrides": {}, "specials": []}
+            return data
+        except Exception:
+            return {"overrides": {}, "specials": []}
+
+    def _save_schedule_overrides(self, data: dict) -> None:
+        path = self._schedule_overrides_path()
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+    def _compute_shift(self, date_str: str, overrides: dict) -> str:
+        if date_str in overrides:
+            return overrides[date_str]
+        anchor = date(2026, 8, 31)
+        parts = date_str.split("-")
+        try:
+            target = date(int(parts[0]), int(parts[1]), int(parts[2]))
+        except (ValueError, IndexError):
+            return "early"
+        delta = (target - anchor).days
+        cycle = ["early", "late", "late"]
+        return cycle[delta % 3]
+
+    async def handle_schedule_api(self, request: Request) -> JSONResponse:
+        denied = self._check_heartbeat_access(request)
+        if denied:
+            return denied
+        try:
+            days_count = int(request.query_params.get("days", 7))
+        except ValueError:
+            days_count = 7
+        days_count = max(1, min(30, days_count))
+        saved = self._load_schedule_overrides()
+        overrides = saved.get("overrides", {})
+        specials = saved.get("specials", [])
+        today = date.today()
+        days = []
+        for i in range(days_count):
+            d = today + timedelta(days=i)
+            ds = d.strftime("%Y-%m-%d")
+            days.append({"date": ds, "shift": self._compute_shift(ds, overrides)})
+        return JSONResponse({"days": days, "overrides": overrides, "specials": specials})
+
+    async def handle_schedule_save(self, request: Request) -> JSONResponse:
+        denied = self._check_heartbeat_access(request)
+        if denied:
+            return denied
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse({"error": "invalid json"}, status_code=400)
+        if not isinstance(body, dict):
+            return JSONResponse({"error": "invalid body"}, status_code=400)
+        overrides = body.get("overrides", {})
+        specials = body.get("specials", [])
+        if not isinstance(overrides, dict):
+            overrides = {}
+        if not isinstance(specials, list):
+            specials = []
+        self._save_schedule_overrides({"overrides": overrides, "specials": specials})
+        return JSONResponse({"ok": True})
+
     async def handle_serve_page(self, request: Request) -> Response:
         """Serve static HTML pages from the pages/ directory."""
         denied = self._check_heartbeat_access(request)
