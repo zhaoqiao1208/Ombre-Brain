@@ -19232,6 +19232,8 @@ class GatewayService:
 
             add_stable_section("Core Memory", core_memory)
             add_stable_section("Portrait Memory", portrait_memory)
+            work_shift_hint = self._build_work_shift_hint()
+            add_stable_section("Work Schedule", work_shift_hint)
 
         dynamic_sections = []
         if has_dynamic_context:
