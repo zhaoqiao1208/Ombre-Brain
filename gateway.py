@@ -19154,18 +19154,32 @@ class GatewayService:
     def _update_cross_platform_activity(self, client: str, user_msg: str) -> None:
         try:
             from datetime import datetime, timezone
+            path = self._cross_platform_activity_path()
+            prev = {}
+            if os.path.exists(path):
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        old = json.loads(f.read().strip() or "{}")
+                    if old.get("client") and old.get("client") != (client or "unknown"):
+                        prev = {"client": old["client"], "time": old.get("time", ""), "snippet": old.get("snippet", "")}
+                    elif old.get("previous"):
+                        prev = old["previous"]
+                except Exception:
+                    pass
             snippet = user_msg[:80].replace("\n", " ").strip()
             data = {
                 "client": client or "unknown",
                 "time": datetime.now(timezone.utc).isoformat(),
                 "snippet": snippet,
             }
-            with open(self._cross_platform_activity_path(), "w", encoding="utf-8") as f:
+            if prev:
+                data["previous"] = prev
+            with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False)
         except Exception:
             pass
 
-    def _build_cross_platform_hint(self, current_client: str) -> str:
+    def _build_cross_platform_hint(self, current_client: str = "") -> str:
         try:
             from datetime import datetime, timezone
             path = self._cross_platform_activity_path()
@@ -19173,11 +19187,12 @@ class GatewayService:
                 return ""
             with open(path, "r", encoding="utf-8") as f:
                 data = json.loads(f.read().strip() or "{}")
-            last_client = data.get("client", "")
-            if not last_client or last_client == current_client:
+            prev = data.get("previous")
+            if not prev or not prev.get("client"):
                 return ""
-            last_time_str = data.get("time", "")
-            snippet = data.get("snippet", "")
+            last_client = prev["client"]
+            last_time_str = prev.get("time", "")
+            snippet = prev.get("snippet", "")
             if not last_time_str:
                 return ""
             last_time = datetime.fromisoformat(last_time_str)
