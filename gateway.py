@@ -4908,7 +4908,7 @@ class GatewayService:
             )
 
             if footprint_text:
-                self._save_footprint(location, footprint_text, emotion)
+                logger.info("Heartbeat footprint skipped (independent loop handles it)")
 
             if should_send and telegram_msg and telegram_available:
                 logger.info("Heartbeat sending telegram | msg=%.60s", telegram_msg)
