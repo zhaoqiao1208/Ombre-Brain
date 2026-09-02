@@ -4826,11 +4826,15 @@ class GatewayService:
             telegram_msg = str(result.get("telegram_message") or "")
             memory_text = str(result.get("diary_content") or "")
             memory_name = str(result.get("diary_name") or "")[:20]
+            footprint_text = str(result.get("footprint") or "")
 
             logger.info(
                 "Heartbeat awakened | action=%s location=%s emotion=%s",
                 action, location, emotion,
             )
+
+            if footprint_text:
+                self._save_footprint(location, footprint_text, emotion)
 
             if should_send and telegram_msg and telegram_available:
                 logger.info("Heartbeat sending telegram | msg=%.60s", telegram_msg)
