@@ -5095,6 +5095,25 @@ class GatewayService:
         entries = self._load_diary(min(limit, 90))
         return JSONResponse({"entries": entries})
 
+    async def handle_diary_generate(self, request: Request) -> JSONResponse:
+        denied = self._check_heartbeat_access(request)
+        if denied:
+            return denied
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        target_date = str(body.get("date", "")).strip()
+        if not target_date:
+            from datetime import datetime, timezone, timedelta
+            tz8 = timezone(timedelta(hours=8))
+            target_date = datetime.now(tz8).strftime("%Y-%m-%d")
+        existing = self._load_diary(90)
+        if any(e.get("date") == target_date for e in existing):
+            return JSONResponse({"ok": False, "message": f"diary for {target_date} already exists"})
+        await self._generate_diary(target_date)
+        return JSONResponse({"ok": True, "date": target_date})
+
     def _footprints_path(self) -> str:
         state_dir = self.config.get("state_dir") or os.path.join(
             self.config.get("buckets_dir", "."), "state"
