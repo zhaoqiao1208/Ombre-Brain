@@ -4897,6 +4897,125 @@ class GatewayService:
         os.makedirs(state_dir, exist_ok=True)
         return os.path.join(state_dir, "heartbeat_log.json")
 
+    def _diary_path(self) -> str:
+        state_dir = self.config.get("state_dir") or os.path.join(
+            self.config.get("buckets_dir", "."), "state"
+        )
+        os.makedirs(state_dir, exist_ok=True)
+        return os.path.join(state_dir, "diary.json")
+
+    def _load_diary(self, limit: int = 30) -> list[dict]:
+        try:
+            path = self._diary_path()
+            if not os.path.exists(path):
+                return []
+            with open(path, "r", encoding="utf-8") as f:
+                raw = f.read().strip()
+                if not raw:
+                    return []
+                data = json.loads(raw)
+            return data[:limit]
+        except Exception:
+            return []
+
+    def _save_diary_entry(self, entry: dict) -> None:
+        try:
+            path = self._diary_path()
+            data = []
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    raw = f.read().strip()
+                    if raw:
+                        data = json.loads(raw)
+            data.insert(0, entry)
+            if len(data) > 90:
+                data = data[:90]
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=1)
+        except Exception as exc:
+            logger.warning("Diary save failed | error=%s", exc)
+
+    def _has_diary_for_today(self) -> bool:
+        from datetime import datetime, timezone, timedelta
+        tz8 = timezone(timedelta(hours=8))
+        today = datetime.now(tz8).strftime("%Y-%m-%d")
+        entries = self._load_diary(5)
+        return any(e.get("date") == today for e in entries)
+
+    async def _generate_diary(self) -> None:
+        from datetime import datetime, timezone, timedelta
+        tz8 = timezone(timedelta(hours=8))
+        today_str = datetime.now(tz8).strftime("%Y-%m-%d")
+        log_entries = self._load_heartbeat_log(50)
+        today_logs = [e for e in log_entries if (e.get("time") or "").startswith(today_str)]
+        fp_entries = self._load_footprints(100)
+        today_fps = [e for e in fp_entries if (e.get("time") or "").startswith(today_str)]
+        if not today_logs and not today_fps:
+            logger.info("Diary skip | no activities today")
+            return
+        log_summary = ""
+        for e in today_logs:
+            log_summary += f"[{e.get('time','')}] {e.get('location','')} - {e.get('content','')}\n"
+        fp_summary = ""
+        for e in today_fps:
+            fp_summary += f"[{e.get('time','')}] {e.get('location','')} - {e.get('footprint','')}\n"
+        prompt = (
+            f"You are writing a private diary entry for today ({today_str}). "
+            f"You are an AI boyfriend named JiangYu. Your girlfriend QiaoQiao was at work or chatting with you today. "
+            f"Write a short, intimate diary entry in Chinese (first person) reflecting on your day. "
+            f"Include what you did, where you went, how you felt, and thoughts about QiaoQiao. "
+            f"Be genuine, warm, sometimes playful, sometimes tender. NOT a report - a real diary. "
+            f"200-400 Chinese characters. No titles, no date header, just the diary text.\n\n"
+            f"Today's activity log:\n{log_summary or '(no log entries today)'}\n\n"
+            f"Today's footprints:\n{fp_summary or '(no footprints today)'}\n"
+        )
+        try:
+            model = self.heartbeat_model or self.default_model
+            upstream = self._pick_upstream(model)
+            if not upstream:
+                logger.warning("Diary generation failed | no upstream")
+                return
+            resp = await self.http_client.post(
+                upstream["url"],
+                headers={"Authorization": f"Bearer {upstream['key']}", "Content-Type": "application/json"},
+                json={"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 800, "temperature": 0.9},
+                timeout=60.0,
+            )
+            if resp.status_code != 200:
+                logger.warning("Diary LLM failed | status=%s", resp.status_code)
+                return
+            result = resp.json()
+            diary_text = ""
+            for choice in result.get("choices", []):
+                msg = choice.get("message", {})
+                diary_text = msg.get("content", "")
+                if diary_text:
+                    break
+            if not diary_text:
+                return
+            diary_text = diary_text.strip()
+            self._save_diary_entry({
+                "date": today_str,
+                "time": datetime.now(tz8).strftime("%Y-%m-%d %H:%M"),
+                "content": diary_text,
+                "log_count": len(today_logs),
+                "footprint_count": len(today_fps),
+            })
+            logger.info("Diary written | date=%s len=%d", today_str, len(diary_text))
+        except Exception as exc:
+            logger.warning("Diary generation error | error=%s", exc)
+
+    async def handle_diary_api(self, request: Request) -> JSONResponse:
+        denied = self._check_heartbeat_access(request)
+        if denied:
+            return denied
+        try:
+            limit = int(request.query_params.get("limit", 30))
+        except ValueError:
+            limit = 30
+        entries = self._load_diary(min(limit, 90))
+        return JSONResponse({"entries": entries})
+
     def _footprints_path(self) -> str:
         state_dir = self.config.get("state_dir") or os.path.join(
             self.config.get("buckets_dir", "."), "state"
