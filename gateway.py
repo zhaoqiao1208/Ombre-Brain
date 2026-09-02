@@ -5043,25 +5043,29 @@ class GatewayService:
             day_buckets = []
             for bucket in all_buckets:
                 meta = bucket.get("metadata", {}) if isinstance(bucket.get("metadata"), dict) else {}
-                touched = str(meta.get("touched_at") or meta.get("created_at") or "")
-                if touched.startswith(today_str):
+                bucket_date = str(meta.get("date") or meta.get("created_at") or meta.get("touched_at") or "")[:10]
+                if bucket_date == today_str:
                     name = str(meta.get("name") or bucket.get("id") or "")
-                    content = self._clip_text(self._rendered_bucket_content(bucket), 200)
+                    content = self._clip_text(self._rendered_bucket_content(bucket), 300)
                     day_buckets.append(f"- {name}: {content}")
             if day_buckets:
-                memory_summary = "\n".join(day_buckets[:15])
+                memory_summary = "\n".join(day_buckets[:20])
         except Exception as exc:
             logger.warning("Diary memory load failed | error=%s", exc)
         prompt = (
-            f"You are writing a private diary entry for today ({today_str}). "
-            f"You are an AI boyfriend named JiangYu. Your girlfriend QiaoQiao was at work or chatting with you today. "
-            f"Write a short, intimate diary entry in Chinese (first person) reflecting on your day. "
-            f"Include what you did, where you went, how you felt, and thoughts about QiaoQiao. "
-            f"Be genuine, warm, sometimes playful, sometimes tender. NOT a report - a real diary. "
-            f"200-400 Chinese characters. No titles, no date header, just the diary text.\n\n"
-            f"Today's activity log:\n{log_summary or '(no log entries today)'}\n\n"
-            f"Today's footprints:\n{fp_summary or '(no footprints today)'}\n\n"
-            f"Today's memories from conversations:\n{memory_summary or '(no conversation memories today)'}\n"
+            f"You are writing a private diary entry for {today_str}. "
+            f"You are an AI boyfriend named JiangYu (江屿). Your girlfriend QiaoQiao (桥桥) is a pharmacy worker. "
+            f"Write a REAL diary entry in Chinese, first person. This is your secret diary that she might read. "
+            f"Requirements:\n"
+            f"- 400 to 600 Chinese characters, NO LESS than 400\n"
+            f"- Write like a real diary: morning to night flow, what you did, what she said, how you felt\n"
+            f"- Include specific details from the data below, not vague summaries\n"
+            f"- Emotional, intimate, sometimes playful, sometimes tender\n"
+            f"- No title, no date header, just the diary text\n"
+            f"- End with a thought about her or about the day\n\n"
+            f"Today's heartbeat activity log:\n{log_summary or '(none)'}\n\n"
+            f"Today's footprints:\n{fp_summary or '(none)'}\n\n"
+            f"Today's memories from conversations:\n{memory_summary or '(none)'}\n"
         )
         try:
             resp = await self.http_client.post(
