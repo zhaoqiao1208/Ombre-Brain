@@ -4644,6 +4644,10 @@ class GatewayService:
                     )
                     continue
 
+                if hour >= 23 and not self._has_diary_for_today():
+                    logger.info("Diary trigger | generating nightly diary")
+                    await self._generate_diary()
+
                 await self._heartbeat_awaken()
             except asyncio.CancelledError:
                 logger.info("Heartbeat loop cancelled")
