@@ -315,7 +315,7 @@ function renderFootprints() {
     var loc = e.location || '小屋';
     var time = e.time || '';
     var content = e.content || '';
-    var snippet = content || '';…' : content;
+    var snippet = content;…' : content;
     h += '<div class="fp-item" style="animation-delay:' + (i * 0.04) + 's"><div class="fp-stem"><div class="fp-dot"></div><div class="fp-line"></div></div><div class="fp-body"><div class="fp-time">' + esc(time) + '</div><div class="fp-loc">' + esc(loc) + '</div><div class="fp-desc">' + esc(snippet) + '</div></div></div>';
   }
   box.innerHTML = h;
