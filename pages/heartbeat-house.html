@@ -67,6 +67,7 @@ var allEntries=[];
 var currentView='log';
 var ACTION_LABELS={hut_activity:'小屋活动',town_activity:'小镇活动',contact:'想念',reflect:'回忆',rest:'安静'};
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+var fpEntries=[];
 function switchView(v){
   currentView=v;
   document.querySelectorAll('.view-tab').forEach(function(b){b.classList.remove('active');});
@@ -74,7 +75,7 @@ function switchView(v){
   else document.querySelectorAll('.view-tab')[1].classList.add('active');
   document.getElementById('log-view').style.display=v==='log'?'':'none';
   document.getElementById('footprint-view').style.display=v==='footprint'?'':'none';
-  if(v==='footprint')renderFootprints();
+  if(v==='footprint')loadFootprints();
 }
 function deleteEntry(time){
   if(!confirm('确定要删除这条记录吗？'))return;
