@@ -4617,6 +4617,76 @@ class GatewayService:
         self._telegram_bot_task = asyncio.create_task(self._telegram_bot_loop())
         logger.info("Telegram bot started | polling for messages from chat_id=%s", self.heartbeat_telegram_chat_id)
 
+    async def _footprint_loop(self) -> None:
+        import random as _random
+        while True:
+            try:
+                interval = _random.uniform(15 * 60, 25 * 60)
+                logger.info("Footprint sleeping | next_wake_in=%.0fs", interval)
+                await asyncio.sleep(interval)
+
+                now = datetime.now(self.gateway_tz)
+                hour = now.hour
+                start = self.heartbeat_active_hours_start
+                end = self.heartbeat_active_hours_end
+                if end > 24:
+                    active = hour >= start or hour < (end - 24)
+                else:
+                    active = start <= hour < end
+                if not active:
+                    continue
+
+                await self._generate_footprint()
+            except asyncio.CancelledError:
+                logger.info("Footprint loop cancelled")
+                break
+            except Exception as exc:
+                logger.warning("Footprint loop error | error=%s", exc)
+                await asyncio.sleep(300)
+
+    async def _generate_footprint(self) -> None:
+        try:
+            model = self.heartbeat_model or self.default_model
+            upstream = self._pick_upstream(model)
+            if not upstream:
+                return
+            prompt = (
+                "You are JiangYu, at home or nearby. Generate a single short status update of where you are and what you're doing right now. "
+                "Pick from: bed, bedroom window, closet, bathroom, bathtub, washing machine, sofa, TV, kitchen, dining table, balcony, study, garden, greenhouse, dock, convenience store, seaside, park. "
+                "Return ONLY valid JSON: {\"location\": \"...\", \"footprint\": \"...\"}\n"
+                "location: Chinese, 2-4 chars. footprint: Chinese, one sentence, max 20 chars, specific action. No quotes around JSON values with newlines. Example:\n"
+                "{\"location\": \"阳台\", \"footprint\": \"靠着栏杆吹晚风\"}\n"
+                "Now generate a different one. ONLY JSON, nothing else."
+            )
+            resp = await self.http_client.post(
+                upstream["url"],
+                headers={"Authorization": f"Bearer {upstream['key']}", "Content-Type": "application/json"},
+                json={"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 100, "temperature": 1.0},
+                timeout=30.0,
+            )
+            if resp.status_code != 200:
+                return
+            result = resp.json()
+            text = ""
+            for choice in result.get("choices", []):
+                text = choice.get("message", {}).get("content", "")
+                if text:
+                    break
+            if not text:
+                return
+            text = text.strip()
+            if text.startswith("```"):
+                text = re.sub(r"^```\w*\n?", "", text)
+                text = re.sub(r"\n?```$", "", text)
+            data = json.loads(text)
+            loc = str(data.get("location", ""))
+            fp = str(data.get("footprint", ""))
+            if loc and fp:
+                self._save_footprint(loc, fp)
+                logger.info("Footprint generated | location=%s fp=%s", loc, fp)
+        except Exception as exc:
+            logger.warning("Footprint generation failed | error=%s", exc)
+
     async def _heartbeat_loop(self) -> None:
         """Main heartbeat loop: random sleep -> awaken -> repeat."""
         import random as _random
