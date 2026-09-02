@@ -5059,7 +5059,8 @@ class GatewayService:
             f"Be genuine, warm, sometimes playful, sometimes tender. NOT a report - a real diary. "
             f"200-400 Chinese characters. No titles, no date header, just the diary text.\n\n"
             f"Today's activity log:\n{log_summary or '(no log entries today)'}\n\n"
-            f"Today's footprints:\n{fp_summary or '(no footprints today)'}\n"
+            f"Today's footprints:\n{fp_summary or '(no footprints today)'}\n\n"
+            f"Today's memories from conversations:\n{memory_summary or '(no conversation memories today)'}\n"
         )
         try:
             resp = await self.http_client.post(
