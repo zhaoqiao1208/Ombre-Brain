@@ -5028,8 +5028,9 @@ class GatewayService:
         today_logs = [e for e in log_entries if (e.get("time") or "").startswith(today_str)]
         fp_entries = self._load_footprints(100)
         today_fps = [e for e in fp_entries if (e.get("time") or "").startswith(today_str)]
-        if not today_logs and not today_fps:
-            logger.info("Diary skip | no activities today")
+        if not today_logs and not today_fps and not memory_summary:
+            logger.info("Diary skip | no data for %s", today_str)
+            return
         log_summary = ""
         for e in today_logs:
             log_summary += f"[{e.get('time','')}] {e.get('location','')} - {e.get('content','')}\n"
