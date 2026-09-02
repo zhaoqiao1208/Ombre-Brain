@@ -100,16 +100,20 @@ function renderCards(entries){
 }
 function renderFootprints(){
   var box=document.getElementById('footprints');
-  if(!allEntries||allEntries.length===0){box.innerHTML='<div class="empty">还没有足迹记录。</div>';return;}
+  if(!fpEntries||fpEntries.length===0){box.innerHTML='<div class="empty">还没有足迹记录。</div>';return;}
   var h='';
-  for(var i=0;i<allEntries.length;i++){
-    var e=allEntries[i];
+  for(var i=0;i<fpEntries.length;i++){
+    var e=fpEntries[i];
     var loc=e.location||'小屋';
     var time=e.time||'';
-    var content=e.content||'';
+    var content=e.footprint||'';
     h+='<div class="fp-item" style="animation-delay:'+(i*0.04)+'s"><div class="fp-stem"><div class="fp-dot"></div><div class="fp-line"></div></div><div class="fp-body"><div class="fp-time">'+esc(time)+'</div><div class="fp-loc">'+esc(loc)+'</div><div class="fp-desc">'+esc(content)+'</div></div></div>';
   }
   box.innerHTML=h;
+}
+function loadFootprints(){
+  var url='/api/footprints?limit=200';if(TOKEN)url+='&token='+encodeURIComponent(TOKEN);
+  fetch(url).then(function(r){if(!r.ok)throw new Error('API error '+r.status);return r.json();}).then(function(data){fpEntries=data.entries||[];renderFootprints();}).catch(function(err){document.getElementById('footprints').innerHTML='<div class="empty">加载失败：'+esc(err.message)+'</div>';});
 }
 function filterCards(f){if(f==='all'){renderCards(allEntries);return;}var loc=f.replace('loc-','');renderCards(allEntries.filter(function(e){return(e.location||'').indexOf(loc)>=0;}));}
 function loadData(){
