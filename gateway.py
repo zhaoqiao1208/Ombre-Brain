@@ -4753,6 +4753,7 @@ class GatewayService:
                 f'"content": "你做了什么/想说什么/产生了什么感受（第一人称，生动具体）", '
                 f'"emotion": "开心|平静|想念|担忧|温暖|无聊|感动|其他", '
                 f'"should_send_telegram": true/false, '
+                f'"footprint": "one short sentence of what you are doing right now at this location, like a status update (e.g. curled up on the sofa flipping channels / standing at the dock watching boats come in / sorting laundry by the washing machine). Max 25 chars in Chinese.", '
                 f'"telegram_message": "如果发Telegram，消息内容（自然口语，不要超过200字）", '
                 f'"diary_content": "如果写日记或反思，要记录的内容（2-3句话）", '
                 f'"diary_name": "简短标题（10字以内）", '
