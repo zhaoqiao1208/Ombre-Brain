@@ -5020,10 +5020,10 @@ class GatewayService:
         entries = self._load_diary(5)
         return any(e.get("date") == today for e in entries)
 
-    async def _generate_diary(self) -> None:
+    async def _generate_diary(self, target_date: str = "") -> None:
         from datetime import datetime, timezone, timedelta
         tz8 = timezone(timedelta(hours=8))
-        today_str = datetime.now(tz8).strftime("%Y-%m-%d")
+        today_str = target_date or datetime.now(tz8).strftime("%Y-%m-%d")
         log_entries = self._load_heartbeat_log(50)
         today_logs = [e for e in log_entries if (e.get("time") or "").startswith(today_str)]
         fp_entries = self._load_footprints(100)
