@@ -5116,6 +5116,34 @@ class GatewayService:
         return JSONResponse({"entries": entries})
 
     async def handle_diary_generate(self, request: Request) -> JSONResponse:
+
+    async def handle_diary_delete(self, request: Request) -> JSONResponse:
+        denied = self._check_heartbeat_access(request)
+        if denied:
+            return denied
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse({"error": "invalid json"}, status_code=400)
+        target_date = str(body.get("date", "")).strip()
+        if not target_date:
+            return JSONResponse({"error": "date required"}, status_code=400)
+        try:
+            path = self._diary_path()
+            if not os.path.exists(path):
+                return JSONResponse({"ok": False, "message": "no diary file"})
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.loads(f.read().strip() or "[]")
+            before = len(data)
+            data = [e for e in data if e.get("date") != target_date]
+            after = len(data)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=1)
+            return JSONResponse({"ok": True, "deleted": before - after})
+        except Exception as exc:
+            return JSONResponse({"error": str(exc)}, status_code=500)
+
+    async def handle_diary_generate(self, request: Request) -> JSONResponse:
         denied = self._check_heartbeat_access(request)
         if denied:
             return denied
