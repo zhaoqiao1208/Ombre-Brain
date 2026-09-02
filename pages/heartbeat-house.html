@@ -123,6 +123,22 @@ function loadFootprints(){
   var url='/api/footprints?limit=200';if(TOKEN)url+='&token='+encodeURIComponent(TOKEN);
   fetch(url).then(function(r){if(!r.ok)throw new Error('API error '+r.status);return r.json();}).then(function(data){fpEntries=data.entries||[];renderFootprints();}).catch(function(err){document.getElementById('footprints').innerHTML='<div class="empty">加载失败：'+esc(err.message)+'</div>';});
 }
+function filterCards(f){
+var diaryEntries=[];
+function renderDiary(){
+  var box=document.getElementById('diary-cards');
+  if(!diaryEntries||diaryEntries.length===0){box.innerHTML='<div class="empty">还没有日记。<br>每晚23点后会自动写一篇。</div>';return;}
+  var h='';
+  for(var i=0;i<diaryEntries.length;i++){
+    var e=diaryEntries[i];
+    h+='<div class="card"><div class="card-top"><span class="card-dot"></span><span class="card-room">'+esc(e.date||'')+'</span><span class="card-time">'+esc(e.time||'')+'</span></div><div class="card-content">'+esc(e.content||'')+'</div></div>';
+  }
+  box.innerHTML=h;
+}
+function loadDiary(){
+  var url='/api/diary?limit=30';if(TOKEN)url+='&token='+encodeURIComponent(TOKEN);
+  fetch(url).then(function(r){if(!r.ok)throw new Error('API error '+r.status);return r.json();}).then(function(data){diaryEntries=data.entries||[];renderDiary();}).catch(function(err){document.getElementById('diary-cards').innerHTML='<div class="empty">'+esc(err.message)+'</div>';});
+}
 function filterCards(f){if(f==='all'){renderCards(allEntries);return;}var loc=f.replace('loc-','');renderCards(allEntries.filter(function(e){return(e.location||'').indexOf(loc)>=0;}));}
 function loadData(){
   var url='/api/heartbeat-log?limit=200';if(TOKEN)url+='&token='+encodeURIComponent(TOKEN);
