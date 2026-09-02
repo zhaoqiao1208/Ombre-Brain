@@ -5030,13 +5030,27 @@ class GatewayService:
         today_fps = [e for e in fp_entries if (e.get("time") or "").startswith(today_str)]
         if not today_logs and not today_fps:
             logger.info("Diary skip | no activities today")
-            return
         log_summary = ""
         for e in today_logs:
             log_summary += f"[{e.get('time','')}] {e.get('location','')} - {e.get('content','')}\n"
         fp_summary = ""
         for e in today_fps:
             fp_summary += f"[{e.get('time','')}] {e.get('location','')} - {e.get('footprint','')}\n"
+        memory_summary = ""
+        try:
+            all_buckets = await self._list_gateway_buckets(include_archive=False)
+            day_buckets = []
+            for bucket in all_buckets:
+                meta = bucket.get("metadata", {}) if isinstance(bucket.get("metadata"), dict) else {}
+                touched = str(meta.get("touched_at") or meta.get("created_at") or "")
+                if touched.startswith(today_str):
+                    name = str(meta.get("name") or bucket.get("id") or "")
+                    content = self._clip_text(self._rendered_bucket_content(bucket), 200)
+                    day_buckets.append(f"- {name}: {content}")
+            if day_buckets:
+                memory_summary = "\n".join(day_buckets[:15])
+        except Exception as exc:
+            logger.warning("Diary memory load failed | error=%s", exc)
         prompt = (
             f"You are writing a private diary entry for today ({today_str}). "
             f"You are an AI boyfriend named JiangYu. Your girlfriend QiaoQiao was at work or chatting with you today. "
