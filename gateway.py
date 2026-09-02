@@ -4893,6 +4893,63 @@ class GatewayService:
         os.makedirs(state_dir, exist_ok=True)
         return os.path.join(state_dir, "heartbeat_log.json")
 
+    def _footprints_path(self) -> str:
+        state_dir = self.config.get("state_dir") or os.path.join(
+            self.config.get("buckets_dir", "."), "state"
+        )
+        os.makedirs(state_dir, exist_ok=True)
+        return os.path.join(state_dir, "footprints.json")
+
+    def _save_footprint(self, location: str, footprint: str, emotion: str = "") -> None:
+        try:
+            from datetime import datetime, timezone, timedelta
+            path = self._footprints_path()
+            data = []
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    raw = f.read().strip()
+                    if raw:
+                        data = json.loads(raw)
+            tz8 = timezone(timedelta(hours=8))
+            entry = {
+                "time": datetime.now(tz8).strftime("%Y-%m-%d %H:%M"),
+                "location": location,
+                "footprint": footprint,
+                "emotion": emotion,
+            }
+            data.insert(0, entry)
+            if len(data) > 500:
+                data = data[:500]
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=1)
+        except Exception as exc:
+            logger.warning("Footprint save failed | error=%s", exc)
+
+    def _load_footprints(self, limit: int = 100) -> list[dict]:
+        try:
+            path = self._footprints_path()
+            if not os.path.exists(path):
+                return []
+            with open(path, "r", encoding="utf-8") as f:
+                raw = f.read().strip()
+                if not raw:
+                    return []
+                data = json.loads(raw)
+            return data[:limit]
+        except Exception:
+            return []
+
+    async def handle_footprints_api(self, request: Request) -> JSONResponse:
+        denied = self._check_heartbeat_access(request)
+        if denied:
+            return denied
+        try:
+            limit = int(request.query_params.get("limit", 100))
+        except ValueError:
+            limit = 100
+        entries = self._load_footprints(min(limit, 500))
+        return JSONResponse({"entries": entries})
+
     def _save_heartbeat_log(self, entry: dict) -> None:
         """Save one heartbeat activity to the independent log file."""
         try:
