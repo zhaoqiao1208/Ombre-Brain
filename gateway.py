@@ -5048,15 +5048,16 @@ class GatewayService:
             f"Today's footprints:\n{fp_summary or '(no footprints today)'}\n"
         )
         try:
-            model = self.heartbeat_model or self.default_model
-            upstream = self._pick_upstream(model)
-            if not upstream:
-                logger.warning("Diary generation failed | no upstream")
-                return
             resp = await self.http_client.post(
-                upstream["url"],
-                headers={"Authorization": f"Bearer {upstream['key']}", "Content-Type": "application/json"},
-                json={"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 800, "temperature": 0.9},
+                f"{self.domain_sentinel_base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {self.domain_sentinel_api_key}", "Content-Type": "application/json"},
+                json={
+                    "model": self.heartbeat_model or self.domain_sentinel_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 800,
+                    "temperature": 0.9,
+                    "enable_thinking": False,
+                },
                 timeout=60.0,
             )
             if resp.status_code != 200:
