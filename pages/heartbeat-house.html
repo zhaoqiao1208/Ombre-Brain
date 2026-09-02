@@ -74,12 +74,16 @@ function esc(s){var d=document.createElement('div');d.textContent=s;return d.inn
 var fpEntries=[];
 function switchView(v){
   currentView=v;
-  document.querySelectorAll('.view-tab').forEach(function(b){b.classList.remove('active');});
-  if(v==='log')document.querySelectorAll('.view-tab')[0].classList.add('active');
-  else document.querySelectorAll('.view-tab')[1].classList.add('active');
+  var tabs=document.querySelectorAll('.view-tab');
+  tabs.forEach(function(b){b.classList.remove('active');});
+  if(v==='log')tabs[0].classList.add('active');
+  else if(v==='footprint')tabs[1].classList.add('active');
+  else tabs[2].classList.add('active');
   document.getElementById('log-view').style.display=v==='log'?'':'none';
   document.getElementById('footprint-view').style.display=v==='footprint'?'':'none';
+  document.getElementById('diary-view').style.display=v==='diary'?'':'none';
   if(v==='footprint')loadFootprints();
+  if(v==='diary')loadDiary();
 }
 function deleteEntry(time){
   if(!confirm('确定要删除这条记录吗？'))return;
