@@ -5120,6 +5120,31 @@ class GatewayService:
         except Exception:
             body = {}
         target_date = str(body.get("date", "")).strip()
+        date_from = str(body.get("from", "")).strip()
+        date_to = str(body.get("to", "")).strip()
+        if date_from and date_to:
+            from datetime import datetime, timezone, timedelta
+            try:
+                start = datetime.strptime(date_from, "%Y-%m-%d").date()
+                end = datetime.strptime(date_to, "%Y-%m-%d").date()
+            except ValueError:
+                return JSONResponse({"error": "invalid date format, use YYYY-MM-DD"}, status_code=400)
+            existing = self._load_diary(90)
+            existing_dates = {e.get("date") for e in existing}
+            results = []
+            d = start
+            while d <= end:
+                ds = d.strftime("%Y-%m-%d")
+                if ds in existing_dates:
+                    results.append({"date": ds, "status": "skipped", "reason": "already exists"})
+                else:
+                    try:
+                        await self._generate_diary(ds)
+                        results.append({"date": ds, "status": "ok"})
+                    except Exception as exc:
+                        results.append({"date": ds, "status": "error", "reason": str(exc)})
+                d += timedelta(days=1)
+            return JSONResponse({"ok": True, "results": results})
         if not target_date:
             from datetime import datetime, timezone, timedelta
             tz8 = timezone(timedelta(hours=8))
