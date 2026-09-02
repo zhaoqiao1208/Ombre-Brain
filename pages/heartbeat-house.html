@@ -41,6 +41,7 @@
   --dot: #9EA88A;
   --delete-bg: rgba(200,100,100,0.12);
   --delete-text: #b06060;
+  --footprint-line: rgba(158,168,138,0.3);
 }
 [data-theme="ink"] {
   --bg: #e5ebe8;
@@ -76,6 +77,7 @@
   --dot: #aecce6;
   --delete-bg: rgba(180,100,100,0.12);
   --delete-text: #a06060;
+  --footprint-line: rgba(174,204,230,0.3);
 }
 [data-theme="mint"] {
   --bg: #e8ebe9;
@@ -111,6 +113,7 @@
   --dot: #A3C0B7;
   --delete-bg: rgba(160,80,80,0.12);
   --delete-text: #905050;
+  --footprint-line: rgba(163,192,183,0.4);
 }
 body {
   background: var(--bg);
@@ -137,7 +140,21 @@ body {
   box-shadow: inset 0 1px 0 var(--glass-highlight);
 }
 .btn-icon:active { transform: scale(0.92); }
-.tabs { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 6px; margin-top: 14px; }
+.view-tabs { display: flex; gap: 0; margin-top: 14px; padding: 0 6px; }
+.view-tab {
+  flex: 1; padding: 8px 0; font-size: 14px; text-align: center;
+  background: var(--tab-bg); border: 1px solid var(--glass-border);
+  color: var(--text-light); cursor: pointer; transition: all 0.25s;
+  font-family: inherit; font-weight: 500;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.view-tab:first-child { border-radius: 10px 0 0 10px; }
+.view-tab:last-child { border-radius: 0 10px 10px 0; }
+.view-tab.active {
+  background: var(--tab-active-bg); color: var(--tab-active-text);
+  border-color: var(--glass-highlight);
+}
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 6px; margin-top: 12px; }
 .tab {
   padding: 6px 14px; font-size: 13px; border-radius: 10px;
   background: var(--tab-bg); border: 1px solid var(--glass-border);
@@ -195,6 +212,18 @@ body {
 .card.action-reflect .card-room { background: var(--tag-reflect); color: var(--tag-reflect-text); }
 .card.action-rest .card-room { background: var(--tag-rest); color: var(--tag-rest-text); }
 .card.action-rest .card-content { color: var(--text-light); font-style: italic; }
+/* Footprint timeline */
+.footprint-timeline { margin-top: 18px; padding: 0 6px; }
+.fp-item { display: flex; align-items: flex-start; gap: 14px; position: relative; padding-bottom: 20px; }
+.fp-item:last-child { padding-bottom: 0; }
+.fp-stem { display: flex; flex-direction: column; align-items: center; width: 20px; flex-shrink: 0; }
+.fp-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dot); border: 2px solid var(--glass-border); flex-shrink: 0; z-index: 1; }
+.fp-line { width: 2px; flex: 1; background: var(--footprint-line); margin-top: 4px; }
+.fp-item:last-child .fp-line { display: none; }
+.fp-body { flex: 1; padding-top: 0; }
+.fp-time { font-size: 11px; color: var(--text-light); margin-bottom: 2px; }
+.fp-loc { font-size: 14px; font-weight: 500; color: var(--text); }
+.fp-desc { font-size: 13px; color: var(--text-dim); margin-top: 2px; line-height: 1.6; }
 .empty { text-align: center; padding: 60px 20px; background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 18px; color: var(--text-light); font-size: 14px; line-height: 2; }
 .loading { text-align: center; padding: 40px; color: var(--text-light); font-size: 13px; }
 @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -204,6 +233,7 @@ body {
 .card:nth-child(3) { animation-delay: 0.1s; }
 .card:nth-child(4) { animation-delay: 0.15s; }
 .card:nth-child(5) { animation-delay: 0.2s; }
+.fp-item { animation: fadeIn 0.3s ease both; }
 </style>
 </head>
 <body>
@@ -217,27 +247,44 @@ body {
       <button class="btn-icon" onclick="cycleTheme()" title="切换主题">🎨</button>
     </div>
   </div>
-  <div class="tabs" id="tabs">
-    <button class="tab active" data-filter="all">全部</button>
-    <button class="tab" data-filter="loc-卧室">卧室</button>
-    <button class="tab" data-filter="loc-客厅">客厅</button>
-    <button class="tab" data-filter="loc-厨房">厨房</button>
-    <button class="tab" data-filter="loc-书房">书房</button>
-    <button class="tab" data-filter="loc-花园">花园</button>
-    <button class="tab" data-filter="loc-花房">花房</button>
-    <button class="tab" data-filter="loc-浴室">浴室</button>
-    <button class="tab" data-filter="loc-阳台">阳台</button>
-    <button class="tab" data-filter="loc-小镇">小镇</button>
-    <button class="tab" data-filter="loc-海边">海边</button>
-    <button class="tab" data-filter="loc-观星台">观星台</button>
+  <div class="view-tabs">
+    <button class="view-tab active" onclick="switchView('log')">日志</button>
+    <button class="view-tab" onclick="switchView('footprint')">足迹</button>
   </div>
-  <div class="cards" id="cards"><div class="loading">加载中…</div></div>
+  <div id="log-view">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-filter="all">全部</button>
+      <button class="tab" data-filter="loc-卧室">卧室</button>
+      <button class="tab" data-filter="loc-客厅">客厅</button>
+      <button class="tab" data-filter="loc-厨房">厨房</button>
+      <button class="tab" data-filter="loc-书房">书房</button>
+      <button class="tab" data-filter="loc-花园">花园</button>
+      <button class="tab" data-filter="loc-花房">花房</button>
+      <button class="tab" data-filter="loc-浴室">浴室</button>
+      <button class="tab" data-filter="loc-阳台">阳台</button>
+      <button class="tab" data-filter="loc-码头">码头</button>
+      <button class="tab" data-filter="loc-海边">海边</button>
+    </div>
+    <div class="cards" id="cards"><div class="loading">加载中…</div></div>
+  </div>
+  <div id="footprint-view" style="display:none">
+    <div class="footprint-timeline" id="footprints"><div class="loading">加载中…</div></div>
+  </div>
 </div>
 <script>
 var TOKEN = new URLSearchParams(location.search).get('token') || '';
 var allEntries = [];
+var currentView = 'log';
 var ACTION_LABELS = { hut_activity: '小屋活动', town_activity: '小镇活动', contact: '想念', reflect: '回忆', rest: '安静' };
 function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function switchView(v) {
+  currentView = v;
+  document.querySelectorAll('.view-tab').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelector('.view-tab[onclick*="' + v + '"]').classList.add('active');
+  document.getElementById('log-view').style.display = v === 'log' ? '' : 'none';
+  document.getElementById('footprint-view').style.display = v === 'footprint' ? '' : 'none';
+  if (v === 'footprint') renderFootprints();
+}
 function deleteEntry(time) {
   if (!confirm('确定要删除这条记录吗？')) return;
   var url = '/api/heartbeat-log/delete';
@@ -255,14 +302,28 @@ function renderCards(entries) {
     var e = entries[i], action = e.action || 'rest', location = e.location || '', content = e.content || '', time = e.time || '', sent = e.sent_telegram, tgMsg = e.telegram_message || '', label = ACTION_LABELS[action] || action;
     var tgHtml = (sent && tgMsg) ? '<div class="card-tg"><div class="card-tg-label">发给桥桥的消息</div><div class="card-tg-text">' + esc(tgMsg) + '</div></div>' : '';
     var statusText = sent ? '已发消息' : label;
-    h += '<div class="card action-' + esc(action) + '" data-location="' + esc(location) + '"><div class="card-top"><span class="card-dot"></span><span class="card-room">' + esc(location || '小屋') + '</span><span class="card-status">' + esc(statusText) + '</span><span class="card-time">' + esc(time) + '</span></div><div class="card-content">' + esc(content) + '</div>' + tgHtml + '<div class="card-actions"><button class="btn-delete" onclick="deleteEntry(\'' + esc(time).replace(/'/g, "\\'") + '\')">\u5220\u9664</button></div></div>';
+    h += '<div class="card action-' + esc(action) + '" data-location="' + esc(location) + '"><div class="card-top"><span class="card-dot"></span><span class="card-room">' + esc(location || '小屋') + '</span><span class="card-status">' + esc(statusText) + '</span><span class="card-time">' + esc(time) + '</span></div><div class="card-content">' + esc(content) + '</div>' + tgHtml + '<div class="card-actions"><button class="btn-delete" onclick="deleteEntry(\'' + esc(time).replace(/'/g, "\\'") + '\')">' + '\u5220\u9664</button></div></div>';
   }
   box.innerHTML = h;
 }
-function filterCards(f) { if (f === 'all') { renderCards(allEntries); return; } var loc = f.replace('loc-', ''); renderCards(allEntries.filter(function(e) { return e.location === loc; })); }
+function renderFootprints() {
+  var box = document.getElementById('footprints');
+  if (!allEntries || allEntries.length === 0) { box.innerHTML = '<div class="empty">还没有足迹记录。</div>'; return; }
+  var h = '';
+  for (var i = 0; i < allEntries.length; i++) {
+    var e = allEntries[i];
+    var loc = e.location || '小屋';
+    var time = e.time || '';
+    var content = e.content || '';
+    var snippet = content.length > 60 ? content.substring(0, 60) + '…' : content;
+    h += '<div class="fp-item" style="animation-delay:' + (i * 0.04) + 's"><div class="fp-stem"><div class="fp-dot"></div><div class="fp-line"></div></div><div class="fp-body"><div class="fp-time">' + esc(time) + '</div><div class="fp-loc">' + esc(loc) + '</div><div class="fp-desc">' + esc(snippet) + '</div></div></div>';
+  }
+  box.innerHTML = h;
+}
+function filterCards(f) { if (f === 'all') { renderCards(allEntries); return; } var loc = f.replace('loc-', ''); renderCards(allEntries.filter(function(e) { return (e.location || '').indexOf(loc) >= 0; })); }
 function loadData() {
   var url = '/api/heartbeat-log?limit=200'; if (TOKEN) url += '&token=' + encodeURIComponent(TOKEN);
-  fetch(url).then(function(r) { if (!r.ok) throw new Error('API error ' + r.status); return r.json(); }).then(function(data) { allEntries = data.entries || []; var active = document.querySelector('.tab.active'); var f = active ? active.getAttribute('data-filter') : 'all'; filterCards(f); }).catch(function(err) { document.getElementById('cards').innerHTML = '<div class="empty">加载失败：' + esc(err.message) + '</div>'; });
+  fetch(url).then(function(r) { if (!r.ok) throw new Error('API error ' + r.status); return r.json(); }).then(function(data) { allEntries = data.entries || []; var active = document.querySelector('.tab.active'); var f = active ? active.getAttribute('data-filter') : 'all'; filterCards(f); if (currentView === 'footprint') renderFootprints(); }).catch(function(err) { document.getElementById('cards').innerHTML = '<div class="empty">加载失败：' + esc(err.message) + '</div>'; });
 }
 document.getElementById('tabs').addEventListener('click', function(ev) { var btn = ev.target.closest('.tab'); if (!btn) return; document.querySelectorAll('.tab').forEach(function(b) { b.classList.remove('active'); }); btn.classList.add('active'); filterCards(btn.getAttribute('data-filter')); });
 var THEMES = ['bamboo', 'ink', 'mint'];
