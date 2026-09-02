@@ -99,7 +99,7 @@ function renderLog(arr){
   }
   b.innerHTML=h;
 }
-function filterLog(f){
+function reload(){if(view==='log')loadLog();else if(view==='fp')loadFP();else loadDiary()}\nfunction filterLog(f){
   if(f==='all'){renderLog(logAll);return}
   var loc=f.replace('loc-','');
   renderLog(logAll.filter(function(x){return(x.location||'').indexOf(loc)>=0}))
