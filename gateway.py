@@ -4647,25 +4647,28 @@ class GatewayService:
 
     async def _generate_footprint(self) -> None:
         try:
-            model = self.heartbeat_model or self.default_model
-            upstream = self._pick_upstream(model)
-            if not upstream:
-                return
-            prompt = (
-                "You are JiangYu, at home or nearby. Generate a single short status update of where you are and what you're doing right now. "
-                "Pick from: bed, bedroom window, closet, bathroom, bathtub, washing machine, sofa, TV, kitchen, dining table, balcony, study, garden, greenhouse, dock, convenience store, seaside, park. "
-                "Return ONLY valid JSON: {\"location\": \"...\", \"footprint\": \"...\"}\n"
-                "location: Chinese, 2-4 chars. footprint: Chinese, one sentence, max 20 chars, specific action. No quotes around JSON values with newlines. Example:\n"
-                "{\"location\": \"阳台\", \"footprint\": \"靠着栏杆吹晚风\"}\n"
-                "Now generate a different one. ONLY JSON, nothing else."
-            )
             resp = await self.http_client.post(
-                upstream["url"],
-                headers={"Authorization": f"Bearer {upstream['key']}", "Content-Type": "application/json"},
-                json={"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 100, "temperature": 1.0},
+                f"{self.domain_sentinel_base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {self.domain_sentinel_api_key}", "Content-Type": "application/json"},
+                json={
+                    "model": self.heartbeat_model or self.domain_sentinel_model,
+                    "messages": [{"role": "user", "content":
+                        "You are JiangYu, at home or nearby. Generate a single short status update of where you are and what you're doing right now. "
+                        "Pick from: bed, bedroom window, closet, bathroom, bathtub, washing machine, sofa, TV, kitchen, dining table, balcony, study, garden, greenhouse, dock, convenience store, seaside, park. "
+                        "Return ONLY valid JSON: {\"location\": \"...\", \"footprint\": \"...\"}\n"
+                        "location: Chinese, 2-4 chars. footprint: Chinese, one sentence, max 20 chars, specific action. Example:\n"
+                        "{\"location\": \"\\u9633\\u53f0\", \"footprint\": \"\\u9760\\u7740\\u680f\\u6746\\u5439\\u665a\\u98ce\"}\n"
+                        "Now generate a different one. ONLY JSON, nothing else."
+                    }],
+                    "max_tokens": 100,
+                    "temperature": 1.0,
+                    "response_format": {"type": "json_object"},
+                    "enable_thinking": False,
+                },
                 timeout=30.0,
             )
             if resp.status_code != 200:
+                logger.warning("Footprint LLM failed | status=%s", resp.status_code)
                 return
             result = resp.json()
             text = ""
