@@ -22975,6 +22975,9 @@ def create_gateway_app(
     async def heartbeat_log_api(request: Request) -> Response:
         return await request.app.state.gateway_service.handle_heartbeat_log_api(request)
 
+    async def diary_api(request: Request) -> JSONResponse:
+        return await request.app.state.gateway_service.handle_diary_api(request)
+
     async def footprints_api(request: Request) -> JSONResponse:
         return await request.app.state.gateway_service.handle_footprints_api(request)
 
