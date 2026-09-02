@@ -4599,6 +4599,7 @@ class GatewayService:
         if self._heartbeat_task is not None:
             return
         self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+        self._footprint_task = asyncio.create_task(self._footprint_loop())
         logger.info(
             "Heartbeat started | min=%sm max=%sm active=%d-%d",
             self.heartbeat_min_interval_minutes,
