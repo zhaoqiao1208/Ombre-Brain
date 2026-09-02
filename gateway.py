@@ -23105,6 +23105,7 @@ def create_gateway_app(
         Route("/api/schedule", schedule_save, methods=["POST"]),
         Route("/api/footprints", footprints_api, methods=["GET"]),
         Route("/api/diary", diary_api, methods=["GET"]),
+        Route("/api/diary/generate", diary_generate, methods=["POST"]),
         Route("/pages/{name}", serve_page, methods=["GET"]),
             Route("/pages-debug", lambda r: JSONResponse({"cwd": str(__import__('pathlib').Path.cwd()), "file": str(__import__('pathlib').Path(__file__).parent), "cwd_ls": [str(p) for p in __import__('pathlib').Path.cwd().iterdir()][:30], "pages_exists_cwd": (__import__('pathlib').Path.cwd() / "pages").is_dir(), "pages_exists_file": (__import__('pathlib').Path(__file__).parent / "pages").is_dir()}), methods=["GET"]),
         ],
