@@ -5555,7 +5555,7 @@ class GatewayService:
                 history.append({"role": "user", "content": content_parts})
             else:
                 history.append({"role": "user", "content": user_text})
-            self._update_cross_platform_activity("telegram", user_text)
+            self._update_cross_platform_activity("telegram", user_text, session_id=session_id)
             if len(history) > self._telegram_chat_max_history * 2:
                 history[:] = history[-(self._telegram_chat_max_history * 2):]
 
