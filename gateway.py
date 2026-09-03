@@ -5040,14 +5040,23 @@ class GatewayService:
         memory_summary = ""
         try:
             all_buckets = await self._list_gateway_buckets(include_archive=False)
-            sorted_buckets = sorted(
-                all_buckets,
-                key=lambda b: b.get("metadata", {}).get("created", ""),
-                reverse=True,
-            )
-            mem_lines = []
-            for bucket in sorted_buckets[:30]:
+            scored = []
+            for bucket in all_buckets:
                 meta = bucket.get("metadata", {}) if isinstance(bucket.get("metadata"), dict) else {}
+                created = str(meta.get("created") or "")[:10]
+                if not created:
+                    continue
+                try:
+                    from datetime import datetime
+                    b_date = datetime.strptime(created, "%Y-%m-%d")
+                    t_date = datetime.strptime(today_str, "%Y-%m-%d")
+                    diff = abs((t_date - b_date).days)
+                except Exception:
+                    diff = 9999
+                scored.append((diff, bucket, meta))
+            scored.sort(key=lambda x: x[0])
+            mem_lines = []
+            for diff, bucket, meta in scored[:30]:
                 name = str(meta.get("name") or bucket.get("id") or "")
                 created = str(meta.get("created") or "")[:10]
                 content = self._clip_text(self._rendered_bucket_content(bucket), 200)
