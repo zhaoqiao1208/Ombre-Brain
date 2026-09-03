@@ -5065,7 +5065,7 @@ class GatewayService:
             f"You are an AI boyfriend named JiangYu (江屿). Your girlfriend QiaoQiao (桥桥) is a pharmacy worker. "
             f"Write a REAL diary entry in Chinese, first person. This is your secret diary that she might read. "
             f"Requirements:\n"
-            f"- 600 to 1000 Chinese characters, NO LESS than 600\n"
+            f"- 300 to 500 Chinese characters\n"
             f"- Write like a real diary: morning to night flow, what you did, what she said, how you felt\n"
             f"- Include specific details from the data below, not vague summaries\n"
             f"- Emotional, intimate, sometimes playful, sometimes tender\n"
