@@ -19772,6 +19772,8 @@ class GatewayService:
                     dynamic_sections.extend(["", title, content])
 
             add_section("Just Now Chat Context", just_now_context)
+            xp_hint = self._build_cross_platform_hint(context_mode or session_id or "")
+            add_section("Cross-Platform Transition", xp_hint)
             add_section("Date Recall", date_recall)
             add_section("Context Mode", f"context_mode: {context_mode}" if context_mode.strip() else "")
             add_section("照顾备忘", active_reminders)
