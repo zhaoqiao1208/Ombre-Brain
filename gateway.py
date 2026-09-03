@@ -19733,12 +19733,11 @@ class GatewayService:
             add_section("Date Recall", date_recall)
             add_section("Context Mode", f"context_mode: {context_mode}" if context_mode.strip() else "")
             add_section("照顾备忘", active_reminders)
-            if self._should_inject_interval(session_id, 20):
-                try:
-                    _shift_summary = today_shift_summary()
-                except Exception:
-                    _shift_summary = ""
-                add_section("桥桥排班", _shift_summary)
+            try:
+                _shift_summary = today_shift_summary()
+            except Exception:
+                _shift_summary = ""
+            add_section("桥桥排班", _shift_summary)
             add_section("Memory Detail Request", memory_detail_recall_instruction)
             add_section(
                 "Memory Reading Policy",
