@@ -5105,6 +5105,10 @@ class GatewayService:
             if not diary_text:
                 return
             diary_text = diary_text.strip()
+            for marker in ["Let's check", "Let me check", "Count characters", "Character count", "---", "```"]:
+                pos = diary_text.find(marker)
+                if pos > 100:
+                    diary_text = diary_text[:pos].strip()
             self._save_diary_entry({
                 "date": today_str,
                 "time": datetime.now(tz8).strftime("%Y-%m-%d %H:%M"),
