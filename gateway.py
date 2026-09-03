@@ -19563,7 +19563,7 @@ class GatewayService:
         os.makedirs(state_dir, exist_ok=True)
         return os.path.join(state_dir, "cross_platform_activity.json")
 
-    def _update_cross_platform_activity(self, client: str, user_msg: str) -> None:
+    def _update_cross_platform_activity(self, client: str, user_msg: str, session_id: str = "") -> None:
         try:
             from datetime import datetime, timezone
             path = self._cross_platform_activity_path()
@@ -19573,7 +19573,12 @@ class GatewayService:
                     with open(path, "r", encoding="utf-8") as f:
                         old = json.loads(f.read().strip() or "{}")
                     if old.get("client") and old.get("client") != (client or "unknown"):
-                        prev = {"client": old["client"], "time": old.get("time", ""), "snippet": old.get("snippet", "")}
+                        prev = {
+                            "client": old["client"],
+                            "time": old.get("time", ""),
+                            "snippet": old.get("snippet", ""),
+                            "session_id": old.get("session_id", ""),
+                        }
                     elif old.get("previous"):
                         prev = old["previous"]
                 except Exception:
@@ -19583,6 +19588,7 @@ class GatewayService:
                 "client": client or "unknown",
                 "time": datetime.now(timezone.utc).isoformat(),
                 "snippet": snippet,
+                "session_id": session_id,
             }
             if prev:
                 data["previous"] = prev
