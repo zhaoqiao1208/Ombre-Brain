@@ -5115,8 +5115,6 @@ class GatewayService:
         entries = self._load_diary(min(limit, 90))
         return JSONResponse({"entries": entries})
 
-    async def handle_diary_generate(self, request: Request) -> JSONResponse:
-
     async def handle_diary_delete(self, request: Request) -> JSONResponse:
         denied = self._check_heartbeat_access(request)
         if denied:
