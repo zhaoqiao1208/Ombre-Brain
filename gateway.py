@@ -19592,6 +19592,7 @@ class GatewayService:
             pass
 
     def _build_cross_platform_hint(self, current_client: str = "") -> str:
+        """Build cross-platform transition context with recent conversation from the other platform."""
         try:
             from datetime import datetime, timezone
             path = self._cross_platform_activity_path()
@@ -19604,7 +19605,6 @@ class GatewayService:
                 return ""
             last_client = prev["client"]
             last_time_str = prev.get("time", "")
-            snippet = prev.get("snippet", "")
             if not last_time_str:
                 return ""
             last_time = datetime.fromisoformat(last_time_str)
@@ -19618,8 +19618,51 @@ class GatewayService:
                 ago = f"{diff_min}min ago"
             else:
                 ago = f"{diff_min // 60}h{diff_min % 60}min ago"
-            hint = f"Cross-platform note: {ago} on [{last_client}], last message: \"{snippet}\""
-            return hint
+
+            other_session_id = prev.get("session_id", "")
+            if not other_session_id:
+                if "telegram" in last_client.lower():
+                    chat_id = self.heartbeat_telegram_chat_id
+                    other_session_id = f"telegram_{chat_id}" if chat_id else ""
+                else:
+                    other_session_id = self.default_session_id
+
+            recent_turns_text = ""
+            if other_session_id:
+                try:
+                    profile_id = str(getattr(self.persona_engine, "profile_id", "") or "default")
+                    turns = self.state_store.list_recent_conversation_turns(
+                        profile_id=profile_id,
+                        session_id=other_session_id,
+                        limit=5,
+                        hours=6,
+                    )
+                    if turns:
+                        user_name = str(self.identity.get("user_display_name") or "user")
+                        ai_name = str(self.identity.get("ai_name") or "AI")
+                        turn_lines = []
+                        for turn in reversed(turns):
+                            u = self._clean_conversation_turn_text(turn.get("user_text", ""))
+                            a = self._clean_conversation_turn_text(turn.get("assistant_text", ""))
+                            if u:
+                                turn_lines.append(f"{user_name}: {self._clip_text(u, 300)}")
+                            if a:
+                                turn_lines.append(f"{ai_name}: {self._clip_text(a, 300)}")
+                        if turn_lines:
+                            recent_turns_text = "\n".join(turn_lines[-10:])
+                except Exception as exc:
+                    logger.debug("Cross-platform recent turns load failed | error=%s", exc)
+
+            platform_label = "Telegram" if "telegram" in last_client.lower() else last_client
+            lines = [
+                f"She was chatting with you on {platform_label} {ago}. "
+                f"She just switched over to this platform. "
+                f"Naturally acknowledge the transition and continue the conversation seamlessly.",
+            ]
+            if recent_turns_text:
+                lines.append(f"Recent conversation on {platform_label}:")
+                lines.append(recent_turns_text)
+            return "\n".join(lines)
         except Exception:
             return ""
 
