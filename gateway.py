@@ -5074,7 +5074,7 @@ class GatewayService:
                 json={
                     "model": self.heartbeat_model or self.domain_sentinel_model,
                     "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 800,
+                    "max_tokens": 2000,
                     "temperature": 0.9,
                     "enable_thinking": False,
                 },
