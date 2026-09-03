@@ -5040,20 +5040,21 @@ class GatewayService:
         memory_summary = ""
         try:
             all_buckets = await self._list_gateway_buckets(include_archive=False)
-            day_buckets = []
-            sample_dates = []
-            for bucket in all_buckets:
+            sorted_buckets = sorted(
+                all_buckets,
+                key=lambda b: b.get("metadata", {}).get("created", ""),
+                reverse=True,
+            )
+            mem_lines = []
+            for bucket in sorted_buckets[:30]:
                 meta = bucket.get("metadata", {}) if isinstance(bucket.get("metadata"), dict) else {}
-                bucket_date = str(meta.get("date") or meta.get("created") or meta.get("created_at") or meta.get("touched_at") or "")[:10]
-                if len(sample_dates) < 5:
-                    sample_dates.append(bucket_date)
-                if bucket_date == today_str:
-                    name = str(meta.get("name") or bucket.get("id") or "")
-                    content = self._clip_text(self._rendered_bucket_content(bucket), 300)
-                    day_buckets.append(f"- {name}: {content}")
-            logger.info("Diary bucket scan | target=%s total=%d matched=%d sample_dates=%s", today_str, len(all_buckets), len(day_buckets), sample_dates)
-            if day_buckets:
-                memory_summary = "\n".join(day_buckets[:20])
+                name = str(meta.get("name") or bucket.get("id") or "")
+                created = str(meta.get("created") or "")[:10]
+                content = self._clip_text(self._rendered_bucket_content(bucket), 200)
+                mem_lines.append(f"[{created}] {name}: {content}")
+            if mem_lines:
+                memory_summary = "\n".join(mem_lines)
+            logger.info("Diary memory loaded | target=%s total=%d used=%d", today_str, len(all_buckets), len(mem_lines))
         except Exception as exc:
             logger.warning("Diary memory load failed | error=%s", exc)
         prompt = (
