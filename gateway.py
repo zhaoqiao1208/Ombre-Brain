@@ -5043,7 +5043,7 @@ class GatewayService:
             day_buckets = []
             for bucket in all_buckets:
                 meta = bucket.get("metadata", {}) if isinstance(bucket.get("metadata"), dict) else {}
-                bucket_date = str(meta.get("date") or bucket.get("created") or meta.get("created_at") or meta.get("touched_at") or "")[:10]
+                bucket_date = str(meta.get("date") or meta.get("created") or meta.get("created_at") or meta.get("touched_at") or "")[:10]
                 if bucket_date == today_str:
                     name = str(meta.get("name") or bucket.get("id") or "")
                     content = self._clip_text(self._rendered_bucket_content(bucket), 300)
