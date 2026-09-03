@@ -4647,28 +4647,21 @@ class GatewayService:
 
     async def _generate_footprint(self) -> None:
         try:
+            prompt = "You are JiangYu. Return ONLY a JSON object with where you are and what you're doing. Format: {\"location\": \"2-4 Chinese chars\", \"footprint\": \"max 20 Chinese chars, specific action\"}. Locations: bed, bedroom, closet, bathroom, bathtub, sofa, TV, kitchen, dining table, balcony, study, garden, dock, seaside, park, convenience store. Be specific and varied. ONLY JSON."
             resp = await self.http_client.post(
                 f"{self.domain_sentinel_base_url}/chat/completions",
                 headers={"Authorization": f"Bearer {self.domain_sentinel_api_key}", "Content-Type": "application/json"},
                 json={
                     "model": self.heartbeat_model or self.domain_sentinel_model,
-                    "messages": [{"role": "user", "content":
-                        "You are JiangYu, at home or nearby. Generate a single short status update of where you are and what you're doing right now. "
-                        "Pick from: bed, bedroom window, closet, bathroom, bathtub, washing machine, sofa, TV, kitchen, dining table, balcony, study, garden, greenhouse, dock, convenience store, seaside, park. "
-                        "Return ONLY valid JSON: {\"location\": \"...\", \"footprint\": \"...\"}\n"
-                        "location: Chinese, 2-4 chars. footprint: Chinese, one sentence, max 20 chars, specific action. Example:\n"
-                        "{\"location\": \"\\u9633\\u53f0\", \"footprint\": \"\\u9760\\u7740\\u680f\\u6746\\u5439\\u665a\\u98ce\"}\n"
-                        "Now generate a different one. ONLY JSON, nothing else."
-                    }],
+                    "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 100,
                     "temperature": 1.0,
-                    "response_format": {"type": "json_object"},
-                    "enable_thinking": False,
                 },
                 timeout=30.0,
             )
+            logger.info("Footprint LLM response | status=%s", resp.status_code)
             if resp.status_code != 200:
-                logger.warning("Footprint LLM failed | status=%s", resp.status_code)
+                logger.warning("Footprint LLM failed | status=%s body=%.200s", resp.status_code, resp.text)
                 return
             result = resp.json()
             text = ""
@@ -4677,17 +4670,21 @@ class GatewayService:
                 if text:
                     break
             if not text:
+                logger.warning("Footprint LLM empty response")
                 return
             text = text.strip()
             if text.startswith("```"):
                 text = re.sub(r"^```\w*\n?", "", text)
                 text = re.sub(r"\n?```$", "", text)
+            logger.info("Footprint raw text | text=%.100s", text)
             data = json.loads(text)
             loc = str(data.get("location", ""))
             fp = str(data.get("footprint", ""))
             if loc and fp:
                 self._save_footprint(loc, fp)
                 logger.info("Footprint generated | location=%s fp=%s", loc, fp)
+            else:
+                logger.warning("Footprint empty fields | loc=%s fp=%s", loc, fp)
         except Exception as exc:
             logger.warning("Footprint generation failed | error=%s", exc)
 
