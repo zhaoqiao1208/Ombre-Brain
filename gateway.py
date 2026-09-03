@@ -19758,8 +19758,7 @@ class GatewayService:
             if self._should_inject_interval(session_id, 15):
                 work_shift_hint = self._build_work_shift_hint()
                 add_stable_section("Work Schedule", work_shift_hint)
-            xp_hint = self._build_cross_platform_hint(context_mode or session_id or "")
-            add_stable_section("Cross-Platform Activity", xp_hint)
+            # Cross-platform hint moved to dynamic context for stronger visibility
 
         dynamic_sections = []
         if has_dynamic_context:
