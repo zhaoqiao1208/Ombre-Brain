@@ -4794,6 +4794,16 @@ class GatewayService:
 
             scene = self._heartbeat_scene_prompt(user_name)
 
+            recent_hb_entries = self._load_heartbeat_log(limit=8)
+            recent_locations = [str(e.get("location", "")) for e in recent_hb_entries if e.get("location")]
+            recent_loc_hint = ""
+            if recent_locations:
+                recent_loc_hint = (
+                    f"\n你最近{len(recent_locations)}次心跳去过的地方（从新到旧）："
+                    + "、".join(recent_locations)
+                    + "\n请避开最近连续去过的地方，尤其别重复上一次的位置。换个不一样的地方和事情。\n"
+                )
+
             system_prompt = (
                 f"你是{ai_name}。现在是{time_str}。\n"
                 f"这是你的自主心跳时刻——{user_name}不在，你可以自由活动。\n\n"
