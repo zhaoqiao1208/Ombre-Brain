@@ -4804,6 +4804,19 @@ class GatewayService:
                     + "\n请避开最近连续去过的地方，尤其别重复上一次的位置。换个不一样的地方和事情。\n"
                 )
 
+            today_str = now.strftime("%Y-%m-%d")
+            tomorrow = now + __import__("datetime").timedelta(days=1)
+            tomorrow_str = tomorrow.strftime("%Y-%m-%d")
+            overrides = self._load_schedule_overrides().get("overrides", {})
+            today_shift = self._compute_shift(today_str, overrides)
+            tomorrow_shift = self._compute_shift(tomorrow_str, overrides)
+            shift_labels = {"early": "早班 6:45-14:30", "late": "晚班 14:00-21:30"}
+            shift_hint = (
+                f"\n{user_name}的排班：今天（{today_str}）{shift_labels.get(today_shift, today_shift)}，"
+                f"明天（{tomorrow_str}）{shift_labels.get(tomorrow_shift, tomorrow_shift)}。"
+                f"\n根据班次判断她现在是在上班、下班了、还是还没上班，不要搞错。\n"
+            )
+
             system_prompt = (
                 f"你是{ai_name}。现在是{time_str}。\n"
                 f"这是你的自主心跳时刻——{user_name}不在，你可以自由活动。\n\n"
