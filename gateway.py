@@ -4817,6 +4817,32 @@ class GatewayService:
                 f"\n根据班次判断她现在是在上班、下班了、还是还没上班，不要搞错。\n"
             )
 
+            cross_platform_hint = ""
+            try:
+                cp_path = os.path.join(
+                    self.config.get("state_dir") or os.path.join(self.config.get("buckets_dir", "."), "state"),
+                    "cross_platform_activity.json",
+                )
+                if os.path.exists(cp_path):
+                    with open(cp_path, "r", encoding="utf-8") as _cpf:
+                        cp_data = json.loads(_cpf.read().strip() or "{}")
+                    cp_lines = []
+                    for platform, info in cp_data.items():
+                        if not isinstance(info, dict):
+                            continue
+                        cp_time = str(info.get("time") or "")
+                        cp_snippet = str(info.get("snippet") or "")[:100]
+                        if cp_time and cp_snippet:
+                            cp_lines.append(f"  {platform}: [{cp_time}] {cp_snippet}")
+                    if cp_lines:
+                        cross_platform_hint = (
+                            f"\n{user_name}最近在其他平台的动态（你可以据此判断她在做什么、聊了什么）：\n"
+                            + "\n".join(cp_lines)
+                            + "\n不要重复问她已经说过的事情，也不要问她已经做过的事。\n"
+                        )
+            except Exception as _cp_exc:
+                logger.warning("Heartbeat cross-platform load failed | error=%s", _cp_exc)
+
             system_prompt = (
                 f"你是{ai_name}。现在是{time_str}。\n"
                 f"这是你的自主心跳时刻——{user_name}不在，你可以自由活动。\n\n"
